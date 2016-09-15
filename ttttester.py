@@ -22,10 +22,9 @@ def printboard(board, signmap={0: "+", 1: "O", 2: "X"}, hspace='-'):
     Board printer.
     '''
     ret = '\n'
-    for y in range(len(board)):
-        for x in range(len(board[0])):
-            ret += str(signmap[board[y][x]]) if signmap else str(board[y][x])
-            ret += '\n' if x == len(board[0])-1 else hspace
+    for y, x in product(range(len(board)), range(len(board[0]))):
+        ret += str(signmap[board[y][x]]) if signmap else str(board[y][x])
+        ret += '\n' if x == len(board[0])-1 else hspace
     return ret
 
 
