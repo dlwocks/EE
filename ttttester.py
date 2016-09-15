@@ -5,6 +5,7 @@ Odd number in the array represents 'odd player', who definitely goes first.
 Even number in the array represents 'even player', who definitely goes second.
 '''
 import logging as log
+from itertools import product
 
 global count
 
@@ -60,12 +61,7 @@ def fork(board, ainum, turn):
                 tempboard[i[0]][i[1]] += 1
                 tempboard[j[0]][j[1]] += 1
                 continue
-    ret = []
-    for i in range(3):
-        for j in range(3):
-            if tempboard[i][j] >= 2:
-                ret.append((i, j))
-    return ret
+    return [pos for pos in product(range(3), range(3)) if tempboard[pos[0]][pos[1]] >=2]
 
 
 def fork_opponent(board, ainum, turn):
