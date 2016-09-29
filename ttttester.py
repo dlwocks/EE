@@ -198,10 +198,12 @@ class datakeeper(object):
         for i in range(1, 10):
             ar[board.index(i)] = i
             self.data.append(ar)
-        self.ans.extend([repeat(end, i)])
+        self.ans.extend(list(repeat(end, i)))
 
     def fetch_data_array(self):
         return array(self.data), array(self.ans)
+
+dk = datakeeper()
 
 
 def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
@@ -211,6 +213,7 @@ def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
              (step, 'AI', printboard(board, None)))
     end = isend(board)
     if end:
+        dk.add_boarddata(board, 1 if end == 1 else 0)
         count['AI' if end == ainum else 'Iterator'] += 1
         assert end != ainum
         if end == ainum:
@@ -258,3 +261,5 @@ def exhaustive_check(algorithm):
     print('Total:' + str(count))
 
 exhaustive_check(algorithm_wiki)
+
+data, ans = dk.fetch_data_array()
