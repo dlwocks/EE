@@ -6,6 +6,7 @@ Even number in the array represents 'even player', who definitely goes second.
 '''
 import logging as log
 from itertools import product, repeat
+from numpy import array
 
 global count
 
@@ -192,15 +193,15 @@ class datakeeper(object):
     data = []
     ans = []
 
-    def add_boarddata(board, end):
+    def add_boarddata(self, board, end):
         ar = [0 for i in range(9)]
         for i in range(1, 10):
             ar[board.index(i)] = i
-            data.append(ar)
-        ans.extend([repeat(end, i)])
+            self.data.append(ar)
+        self.ans.extend([repeat(end, i)])
 
-    def fetch_data_array():
-        return array(data), array(ans)
+    def fetch_data_array(self):
+        return array(self.data), array(self.ans)
 
 
 def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
