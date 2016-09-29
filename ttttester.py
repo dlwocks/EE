@@ -5,7 +5,7 @@ Odd number in the array represents 'odd player', who definitely goes first.
 Even number in the array represents 'even player', who definitely goes second.
 '''
 import logging as log
-from itertools import product
+from itertools import product, repeat
 
 global count
 
@@ -188,6 +188,21 @@ def emptyspace(board, step):
                 board[i][j] = 0
 
 
+class datakeeper(object):
+    data = []
+    ans = []
+
+    def add_boarddata(board, end):
+        ar = [0 for i in range(9)]
+        for i in range(1, 10):
+            ar[board.index(i)] = i
+            data.append(ar)
+        ans.extend([repeat(end, i)])
+
+    def fetch_data_array():
+        return array(data), array(ans)
+
+
 def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
     if board is None:
         board = [[0 for i in range(3)]for j in range(3)]
@@ -234,9 +249,6 @@ def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
 
 
 def exhaustive_check(algorithm):
-    '''
-    An algorithm, by receiving board and ainum, should return a tuple
-    '''
     _exhaustive_check(algorithm, ainum=1)
     print('AI goes first: ' + str(count))
     board = [[0 for i in range(3)] for j in range(3)]
