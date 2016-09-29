@@ -7,12 +7,13 @@ Even number in the array represents 'even player', who definitely goes second.
 import logging as log
 from itertools import product, repeat
 from numpy import array
+from copy import copy, deepcopy
 
 global count
 
 log.basicConfig(filename='ttttester.log',
                 filemode='w',
-                level=log.DEBUG,
+                level=log.INFO,
                 format='%(asctime)s %(message)s')
 RETURNBEFORE = False
 count = {'AI': 0, 'Iterator': 0, 'Draw': 0}
@@ -193,15 +194,31 @@ class datakeeper(object):
     data = []
     ans = []
 
+    def _transform(self, board):
+        for i in range(3):
+            for j in range(3):
+                if board[i][j] != 0:
+                    board[i][j] = 1 if board[i][j] % 2 else -1
+
     def add_boarddata(self, board, end):
+        self._transform(board)
+        board = list(array(board).reshape((9,)))
         ar = [0 for i in range(9)]
         for i in range(1, 10):
-            ar[board.index(i)] = i
-            self.data.append(ar)
+            try:
+                ar[board.index(i)] = i
+            except ValueError:
+                i -= 1
+                break
+            self.data.append(copy(ar))
         self.ans.extend(list(repeat(end, i)))
 
     def fetch_data_array(self):
         return array(self.data), array(self.ans)
+
+    def clear(self):
+        self.data = []
+        self.ans = []
 
 dk = datakeeper()
 
@@ -213,13 +230,13 @@ def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
              (step, 'AI', printboard(board, None)))
     end = isend(board)
     if end:
-        dk.add_boarddata(board, 1 if end == 1 else 0)
         count['AI' if end == ainum else 'Iterator'] += 1
-        assert end != ainum
+        assert end != ainum, 'end:%s, ainum:%s, but last step was Iterator.' % (end, ainum)
         if end == ainum:
             log.info('AI wins the game.')
         else:
             log.info('Iterator wins the game.')
+        dk.add_boarddata(deepcopy(board), 1 if end == 1 else 0)
         return
     elif step == 10:
         count['Draw'] += 1
@@ -235,11 +252,12 @@ def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
     if end:
         count['AI' if end == ainum else 'Iterator'] += 1
         board[i][j] = 0
-        assert end == ainum
+        assert end == ainum, 'end:%s, ainum:%s, but last step was AI.' % (end, ainum)
         if end == ainum:
             log.info('AI wins the game.')
         else:
             log.info('Iterator wins the game.')
+        dk.add_boarddata(deepcopy(board), 1 if end == 1 else 0)
         return
     elif step == 10:
         count['Draw'] += 1
@@ -252,14 +270,17 @@ def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
     board[i][j] = 0
 
 
-def exhaustive_check(algorithm):
+def exhaustive_check(algorithm=algorithm_wiki):
+    global count
+    dk.clear()
     _exhaustive_check(algorithm, ainum=1)
     print('AI goes first: ' + str(count))
     board = [[0 for i in range(3)] for j in range(3)]
     for subboard in emptyspace(board, 1):
         _exhaustive_check(algorithm, subboard, 2)
     print('Total:' + str(count))
+    count = {'AI': 0, 'Iterator': 0, 'Draw': 0}
+    return dk
 
-exhaustive_check(algorithm_wiki)
-
-data, ans = dk.fetch_data_array()
+if __name__ == '__main__':
+    exhaustive_check()
