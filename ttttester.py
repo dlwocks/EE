@@ -199,7 +199,7 @@ class datakeeper(object):
         ar = [0 for i in range(9)]
         for i in range(1, 10):
             try:
-                ar[board.index(i)] = 1 if board[i] % 2 else -1
+                ar[board.index(i)] = 1 if i % 2 else -1
             except ValueError:
                 i -= 1
                 break
