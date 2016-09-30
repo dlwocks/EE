@@ -26,7 +26,7 @@ testans = array([1, 1, 1, 1, 1, 0])
 
 if __name__ == '__main__':
     dk = exhaustive_check()
-    data, ans = dk.fetch_data_array()
+    data, ans = dk.fetch()
     theta = array([0 for i in range(9)])
     print(theta)
     theta = minimize(costfunc, theta, args=(data, ans), jac=costfunc_d, method='BFGS')

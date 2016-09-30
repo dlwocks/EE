@@ -194,19 +194,12 @@ class datakeeper(object):
     data = []
     ans = []
 
-    def _transform(self, board):
-        for i in range(3):
-            for j in range(3):
-                if board[i][j] != 0:
-                    board[i][j] = 1 if board[i][j] % 2 else -1
-
     def add(self, board, end):
-        self._transform(board)
         board = list(array(board).reshape((9,)))
         ar = [0 for i in range(9)]
         for i in range(1, 10):
             try:
-                ar[board.index(i)] = i
+                ar[board.index(i)] = 1 if board[i] % 2 else -1
             except ValueError:
                 i -= 1
                 break
