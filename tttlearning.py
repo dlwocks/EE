@@ -16,7 +16,7 @@ def costfunc(theta, data, ans):
 if __name__ == '__main__':
     dk = exhaustive_check()
     data, ans = dk.fetch_data_array()
-    theta = array([(random()-0.5)/1000 for i in range(9)])
+    theta = array([0 for i in range(9)])
     print(theta)
     theta = fmin(costfunc, theta, args=(data, ans),maxfun=100000)
     print(theta)
