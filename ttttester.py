@@ -200,7 +200,7 @@ class datakeeper(object):
                 if board[i][j] != 0:
                     board[i][j] = 1 if board[i][j] % 2 else -1
 
-    def add_boarddata(self, board, end):
+    def add(self, board, end):
         self._transform(board)
         board = list(array(board).reshape((9,)))
         ar = [0 for i in range(9)]
@@ -213,7 +213,7 @@ class datakeeper(object):
             self.data.append(copy(ar))
         self.ans.extend(list(repeat(end, i)))
 
-    def fetch_data_array(self):
+    def fetch(self):
         return array(self.data), array(self.ans)
 
     def clear(self):
@@ -236,7 +236,7 @@ def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
             log.info('AI wins the game.')
         else:
             log.info('Iterator wins the game.')
-        dk.add_boarddata(deepcopy(board), 1 if end == 1 else 0)
+        dk.add(deepcopy(board), 1 if end == 1 else 0)
         return
     elif step == 10:
         count['Draw'] += 1
@@ -257,7 +257,7 @@ def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
             log.info('AI wins the game.')
         else:
             log.info('Iterator wins the game.')
-        dk.add_boarddata(deepcopy(board), 1 if end == 1 else 0)
+        dk.add(deepcopy(board), 1 if end == 1 else 0)
         return
     elif step == 10:
         count['Draw'] += 1
