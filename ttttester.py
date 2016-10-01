@@ -70,7 +70,6 @@ def _row_gen(board):
     yield[board[0][2], board[1][1], board[2][0]]
 
 
-
 def emptyspace(board, step):
     '''
     Generate all possible board

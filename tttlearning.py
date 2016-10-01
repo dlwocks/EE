@@ -5,15 +5,16 @@ from random import random
 from ttttester import exhaustive_check
 
 
-def _sigmoid(z):
+def sigmoid(z):
     return 1/(1+e**(-z))
 
 
 def costfunc(theta, data, ans):
-    return sum(ans * -log(_sigmoid(dot(data, theta))) - (1 - ans) * log(1 - _sigmoid(dot(data, theta))))
+    return sum(ans * -log(sigmoid(dot(data, theta))) - (1 - ans) * log(1 - sigmoid(dot(data, theta))))
+
 
 def costfunc_d(theta, data, ans):
-    return dot(data.T, (_sigmoid(dot(data, theta)) - ans)) / len(theta)
+    return dot(data.T, (sigmoid(dot(data, theta)) - ans)) / len(theta)
 
 
 testdata = array([[0, 0, 0, 0, 1, 0, 0, 0, 0],
