@@ -53,12 +53,14 @@ def _fork_opponent(board, ainum, turn):
             return posone
     return oppofork[0]
 
+
 def _row_gen_pos():
     for i in range(3):
         yield [(i, 0), (i, 1), (i, 2)]
         yield [(0, i), (1, i), (2, i)]
     yield [(0, 0), (1, 1), (2, 2)]
     yield [(0, 2), (1, 1), (2, 0)]
+
 
 def algorithm_wiki(board, ainum, turn):
     '''
