@@ -1,13 +1,14 @@
 import logging as log
 from itertools import product
 
+
 def _permutation_3(row):
     yield row[0], row[1], row[2]
     yield row[1], row[2], row[0]
     yield row[0], row[2], row[1]
 
 
-def two_in_a_row(board, ainum):
+def _two_in_a_row(board, ainum):
     '''
     Return one of positions that completes a two-in-a-row.
     (That is, a position either wins or blocks)
@@ -25,7 +26,7 @@ def two_in_a_row(board, ainum):
     return temp
 
 
-def fork(board, ainum, turn):
+def _fork(board, ainum, turn):
     tempboard = [[-100 if board[j][i] else 0 for i in range(3)]for j in range(3)]
     for row in _row_gen_pos():
         for i, j, k in _permutation_3(row):
@@ -36,8 +37,8 @@ def fork(board, ainum, turn):
     return [pos for pos in product(range(3), range(3)) if tempboard[pos[0]][pos[1]] >=2]
 
 
-def fork_opponent(board, ainum, turn):
-    oppofork = fork(board, (ainum % 2) + 1, turn)
+def _fork_opponent(board, ainum, turn):
+    oppofork = _fork(board, (ainum % 2) + 1, turn)
     if not oppofork:
         return None
     create_tiar = set()
@@ -52,6 +53,12 @@ def fork_opponent(board, ainum, turn):
             return posone
     return oppofork[0]
 
+def _row_gen_pos():
+    for i in range(3):
+        yield [(i, 0), (i, 1), (i, 2)]
+        yield [(0, i), (1, i), (2, i)]
+    yield [(0, 0), (1, 1), (2, 2)]
+    yield [(0, 2), (1, 1), (2, 0)]
 
 def algorithm_wiki(board, ainum, turn):
     '''
@@ -67,15 +74,15 @@ def algorithm_wiki(board, ainum, turn):
     8. Empty Side
 
     '''
-    pos = two_in_a_row(board, ainum)
+    pos = _two_in_a_row(board, ainum)
     if pos:
-        log.info('returned in two_in_a_row')
+        log.info('returned in _two_in_a_row')
         return pos
-    pos = fork(board, ainum, turn)
+    pos = _fork(board, ainum, turn)
     if pos:
         log.info('returned in own fork')
         return pos[0]
-    pos = fork_opponent(board, ainum, turn)
+    pos = _fork_opponent(board, ainum, turn)
     if pos:
         log.info('returned in opponent fork')
         return pos
@@ -100,11 +107,3 @@ def algorithm_wiki(board, ainum, turn):
         if board[i][j] == 0:
             return i, j
     assert False
-
-
-def _row_gen_pos():
-    for i in range(3):
-        yield [(i, 0), (i, 1), (i, 2)]
-        yield [(0, i), (1, i), (2, i)]
-    yield [(0, 0), (1, 1), (2, 2)]
-    yield [(0, 2), (1, 1), (2, 0)]
