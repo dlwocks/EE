@@ -10,9 +10,11 @@ from ttttester import isend
 
 class logreg_ai(object):
     VAL_FEATURE_NUM = 9
-    theta_value = array([(random()-0.5)/1000 for i in range(VAL_FEATURE_NUM)])  # Theta for value network(win or lose)
     data = []
     ans = []
+
+    def __init__(self, t=array([0 for _ in range(VAL_FEATURE_NUM)])):
+        self.theta_value = t
 
     def _emptyspace_pos(self, board, step):
         for i in range(3):
@@ -60,6 +62,8 @@ class logreg_ai(object):
 
     def startlearn(self, game=1000):
         for _ in range(game):
+            if _ > 0 and _ % (game//50) == 0:
+                print('%d games done..\nCurrent theta value:\n%s' % (_, self.theta_value))
             try:
                 board = [[0 for i in range(3)]for i in range(3)]
                 ainum = randint(1, 2)
