@@ -47,7 +47,7 @@ def _isend(nums):
     return 0
 
 
-def isend(board):
+def isend(board, turn=None):
     """
     Return 1 if the odd player wins the game.
     Return 2 if the even player wins the game.
@@ -56,6 +56,8 @@ def isend(board):
     for end in map(_isend, _row_gen(board)):
         if end:
             return end
+    if turn == 9:
+        return 0.5
 
 
 def _row_gen(board):
@@ -122,7 +124,7 @@ def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
         board = [[0 for i in range(3)]for j in range(3)]
     log.info('next step: %d by %s. current board:%s' %
              (step, 'AI', printboard(board, None)))
-    end = isend(board)
+    end = isend(board, step)
     if end:
         count['AI' if end == ainum else 'Iterator'] += 1
         assert end != ainum, 'end:%s, ainum:%s, but last step was Iterator.' % (end, ainum)
@@ -142,7 +144,7 @@ def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
     step += 1
     log.info('next step: %d by %s. current board:%s' %
              (step, 'Iterator', printboard(board, None)))
-    end = isend(board)
+    end = isend(board, step)
     if end:
         count['AI' if end == ainum else 'Iterator'] += 1
         board[i][j] = 0

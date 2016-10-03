@@ -38,8 +38,9 @@ class logreg_ai(object):
         self.ans.extend(list(repeat(end, i)))
 
     def train_value(self, board, end):
-        assert end == 1 or end == 2
-        end = end % 2
+        assert end == 1 or end == 2 or end == 0.5
+        if end == 2:
+            end == 0
         self._add(board, end)
         self.theta_value = minimize(costfunc, self.theta_value, args=(array(self.data), array(self.ans)), jac=costfunc_d, method='BFGS').x
 
@@ -116,8 +117,8 @@ class logreg_ai(object):
                     else:
                         assert False, 'param opponent is not self or random.'
                 board[i][j] = step
-                end = isend(board)
-                if end == 1 or end == 2:
+                end = isend(board, step+1)
+                if end in [1, 2, 0.5]:
                     self.train_value(board, end)
                     break
                 step += 1
