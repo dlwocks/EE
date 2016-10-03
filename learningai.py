@@ -1,7 +1,7 @@
 from numpy import array, dot, log, e
 from scipy.optimize import minimize
 from copy import copy
-from itertools import repeat
+from itertools import repeat, count
 from random import random, randint
 import matplotlib.pyplot as plt
 
@@ -66,44 +66,67 @@ class logreg_ai(object):
             arr[i] = arr[i] - arr[i-1]
         return arr
 
-    def startlearn(self, game=200):
+    def _checkdiv(self, arr, difftol):
+        conv = True
+        largest = 0
+        for f in range(self.VAL_FEATURE_NUM):
+            diff = abs(arr[-1][f] - arr[-2][f])
+            if diff > difftol:
+                conv = False
+                if diff > largest:
+                    largest = diff
+        if conv:
+            return 0
+        else:
+            return largest
+
+    def startlearn(self, game='converge', difftol=0.01):
+        if game == 'converge':
+            iterator = count()
+            THETA_CHECK_STEP = 10
+        else:
+            iterator = range(game)
+            THETA_CHECK_STEP = game // 100
         thetas = []
-        for _ in range(game):
-            if _ % (game//100) == 0:
-                if _ != 0:
-                    print('%d games done..' % _)
-                # print('Current theta value:\n%s' % self.theta_value)
-                thetas.append(self.theta_value)
-            try:
-                board = [[0 for i in range(3)]for i in range(3)]
-                ainum = randint(1, 2)
-                end = 0
-                step = 1
-                while not end and step < 10:
-                    if step % 2 == ainum % 2:
-                        i, j = self.getstep(board, ainum, step)
+        for c in iterator:
+            if c % THETA_CHECK_STEP == 0:
+                if c != 0:
+                    if game == 'converge' and c >= THETA_CHECK_STEP * 2:
+                        div = self._checkdiv(thetas, difftol)
+                        if not div:
+                            print('%d games done: Theta value has successfully converged.' % c)
+                            break
+                        else:
+                            print('%d games done: Theta value is yet to converge. Largest divergence: %f' % (c, div))
                     else:
-                        i, j = self._randomstep(board)
-                    board[i][j] = step
-                    end = isend(board)
-                    if end == 1 or end == 2:
-                        self.train_value(board, end)
-                        break
-                    step += 1
-            except:
-                print('An unexpected error occured in game %d.' % _)
-                assert False
+                        print('%d games done..' % c)
+                thetas.append(self.theta_value)
+            board = [[0 for i in range(3)]for i in range(3)]
+            ainum = randint(1, 2)
+            end = 0
+            step = 1
+            while not end and step < 10:
+                if step % 2 == ainum % 2:
+                    i, j = self.getstep(board, ainum, step)
+                else:
+                    i, j = self._randomstep(board)
+                board[i][j] = step
+                end = isend(board)
+                if end == 1 or end == 2:
+                    self.train_value(board, end)
+                    break
+                step += 1
         thetas.append(self.theta_value)
         print('learning successfully terminated with %d game(s) done.'
-              'Final theta value:\n%s' % (game, repr(self.theta_value)))
+              'Final theta value:\n%s' % (c, repr(self.theta_value)))
         thetas = array(thetas).T
         for i in range(9):
-            plt.plot([i for i in range(0, game+1, game//100)],thetas[i],label='F%d' % i)
+            plt.plot([i for i in range(0, c+1, THETA_CHECK_STEP)], thetas[i])
         plt.show()
         plt.close('all')
         for i in range(9):
-            plt.plot(self._getdiff(thetas[i]), label='F%d' % i)
-        plt.plot([i for i in range(0, game+1, game//100)], [0 for i in range(len(thetas[0]))], linewidth=2.0, color='black')
+            plt.plot([i for i in range(0, c+1, THETA_CHECK_STEP)], self._getdiff(thetas[i]))
+        plt.plot([i for i in range(0, c+1, THETA_CHECK_STEP)], [0 for i in range(len(thetas[0]))], linewidth=2.0, color='black')
         plt.show()
         return self
 
