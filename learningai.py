@@ -66,10 +66,10 @@ class logreg_ai(object):
             arr[i] = arr[i] - arr[i-1]
         return arr
 
-    def startlearn(self, game=100):
+    def startlearn(self, game=200):
         thetas = []
         for _ in range(game):
-            if _ % 10 == 0:
+            if _ % (game//100) == 0:
                 if _ != 0:
                     print('%d games done..' % _)
                 # print('Current theta value:\n%s' % self.theta_value)
@@ -93,15 +93,17 @@ class logreg_ai(object):
             except:
                 print('An unexpected error occured in game %d.' % _)
                 assert False
+        thetas.append(self.theta_value)
         print('learning successfully terminated with %d game(s) done.'
               'Final theta value:\n%s' % (game, repr(self.theta_value)))
         thetas = array(thetas).T
         for i in range(9):
-            plt.plot(thetas[i], label='F%d' % i)
+            plt.plot([i for i in range(0, game+1, game//100)],thetas[i],label='F%d' % i)
         plt.show()
         plt.close('all')
         for i in range(9):
             plt.plot(self._getdiff(thetas[i]), label='F%d' % i)
+        plt.plot([i for i in range(0, game+1, game//100)], [0 for i in range(len(thetas[0]))], linewidth=2.0, color='black')
         plt.show()
         return self
 
