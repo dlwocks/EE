@@ -66,11 +66,12 @@ class logreg_ai(object):
             arr[i] = arr[i] - arr[i-1]
         return arr
 
-    def startlearn(self, game=1000):
+    def startlearn(self, game=100):
         thetas = []
         for _ in range(game):
-            if _ > 0 and _ % (game//100) == 0:
-                print('%d games done..' % _)
+            if _ % 10 == 0:
+                if _ != 0:
+                    print('%d games done..' % _)
                 # print('Current theta value:\n%s' % self.theta_value)
                 thetas.append(self.theta_value)
             try:
@@ -103,3 +104,6 @@ class logreg_ai(object):
             plt.plot(self._getdiff(thetas[i]), label='F%d' % i)
         plt.show()
         return self
+
+if __name__ == '__main__':
+    logreg_ai().startlearn()
