@@ -27,14 +27,14 @@ class logreg_ai(object):
 
     def _add(self, board, end):
         board = list(array(board).reshape((9,)))
-        ar = [0 for i in range(9)]
+        arr = [0 for i in range(9)]
         for i in range(1, 10):
             try:
-                ar[board.index(i)] = 1 if i % 2 else -1
+                arr[board.index(i)] = 1 if i % 2 else -1
             except ValueError:
                 i -= 1
                 break
-            self.data.append(copy(ar))
+            self.data.append(copy(arr))
         self.ans.extend(list(repeat(end, i)))
 
     def train_value(self, board, end):
