@@ -3,6 +3,7 @@ from scipy.optimize import minimize
 from copy import copy
 from itertools import repeat
 from random import random, randint
+import matplotlib.pyplot as plt
 
 from tttlearning import costfunc, costfunc_d, sigmoid
 from ttttester import isend
@@ -60,10 +61,18 @@ class logreg_ai(object):
             count += 1
             assert count <= 10000
 
+    def _getdiff(self, arr):
+        for i in range(len(arr)-1, 0, -1):
+            arr[i] = arr[i] - arr[i-1]
+        return arr
+
     def startlearn(self, game=1000):
+        thetas = []
         for _ in range(game):
-            if _ > 0 and _ % (game//50) == 0:
-                print('%d games done..\nCurrent theta value:\n%s' % (_, self.theta_value))
+            if _ > 0 and _ % (game//100) == 0:
+                print('%d games done..' % _)
+                # print('Current theta value:\n%s' % self.theta_value)
+                thetas.append(self.theta_value)
             try:
                 board = [[0 for i in range(3)]for i in range(3)]
                 ainum = randint(1, 2)
@@ -85,4 +94,12 @@ class logreg_ai(object):
                 assert False
         print('learning successfully terminated with %d game(s) done.'
               'Final theta value:\n%s' % (game, repr(self.theta_value)))
+        thetas = array(thetas).T
+        for i in range(9):
+            plt.plot(thetas[i], label='F%d' % i)
+        plt.show()
+        plt.close('all')
+        for i in range(9):
+            plt.plot(self._getdiff(thetas[i]), label='F%d' % i)
+        plt.show()
         return self
