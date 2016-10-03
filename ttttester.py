@@ -8,6 +8,7 @@ import logging as log
 from itertools import product, repeat
 from numpy import array
 from copy import copy, deepcopy
+from random import randint
 
 from ai import algorithm_wiki
 
@@ -107,6 +108,13 @@ class datakeeper(object):
         self.ans = []
 
 dk = datakeeper()
+
+
+def randomstep(board, _, __):
+    while True:
+        i, j = randint(0, 2), randint(0, 2)
+        if board[i][j] == 0:
+            return i, j
 
 
 def _exhaustive_check(algorithm, board=None, step=1, ainum=2):

@@ -80,7 +80,7 @@ class logreg_ai(object):
         else:
             return largest
 
-    def startlearn(self, game='converge', difftol=0.01):
+    def startlearn(self, game='converge', difftol=0.01, opponent='random'):
         if game == 'converge':
             iterator = count()
             THETA_CHECK_STEP = 10
@@ -109,7 +109,12 @@ class logreg_ai(object):
                 if step % 2 == ainum % 2:
                     i, j = self.getstep(board, ainum, step)
                 else:
-                    i, j = self._randomstep(board)
+                    if opponent == 'self':
+                        i, j = self.getstep(board, ainum, step)
+                    elif opponent == 'random':
+                        i, j = self._randomstep(board)
+                    else:
+                        assert False, 'param opponent is not self or random.'
                 board[i][j] = step
                 end = isend(board)
                 if end == 1 or end == 2:
