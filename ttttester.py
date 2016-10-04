@@ -36,32 +36,6 @@ def emptyspace(board, step):
                 board[i][j] = 0
 
 
-class datakeeper(object):
-    data = []
-    ans = []
-
-    def add(self, board, end):
-        board = list(array(board).reshape((9,)))
-        ar = [0 for i in range(9)]
-        for i in range(1, 10):
-            try:
-                ar[board.index(i)] = 1 if i % 2 else -1
-            except ValueError:
-                i -= 1
-                break
-            self.data.append(copy(ar))
-        self.ans.extend(list(repeat(end, i)))
-
-    def fetch(self):
-        return array(self.data), array(self.ans)
-
-    def clear(self):
-        self.data = []
-        self.ans = []
-
-dk = datakeeper()
-
-
 def randomstep(board, _, __):
     while True:
         i, j = randint(0, 2), randint(0, 2)
@@ -81,12 +55,10 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
             assert end != ainum, 'end:%s, ainum:%s, but last step was Iterator.' % (end, ainum)
             assert end != 0.5
             log.info('Iterator wins the game.')
-            # dk.add(deepcopy(board), end % 2)
             return
     elif step == 10:
         count['Draw'] += 1
         log.info('The game ended in draw.')
-        # dk.add(deepcopy(board), 0.5)
         return
     i, j = algorithm(board, ainum, step)
     assert board[i][j] == 0, 'pos: %d, %d' % (i, j)
@@ -101,13 +73,11 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
             board[i][j] = 0
             assert end == ainum, 'end:%s, ainum:%s, but last step was AI.' % (end, ainum)
             log.info('AI wins the game.')
-            # dk.add(deepcopy(board), end % 2)
             return
     elif step == 10:
         count['Draw'] += 1
         board[i][j] = 0
         log.info('The game ended in draw.')
-        # dk.add(deepcopy(board), 0.5)
         return
     for k, subboard in enumerate(emptyspace(board, step)):
         log.info('enters %dth subboard on step %d' % (k+1, step))
@@ -118,7 +88,6 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
 def complete_check(algorithm=algorithm_wiki, pt=False):
     global count
     count = {'AI': 0, 'Iterator': 0, 'Draw': 0}
-    # dk.clear()
     _complete_check(algorithm, ainum=1)
     if pt:
         print('AI goes first: ' + str(count))
