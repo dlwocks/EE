@@ -124,19 +124,22 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
         board = [[0 for i in range(3)]for j in range(3)]
     log.info('next step: %d by %s. current board:%s' %
              (step, 'AI', printboard(board, None)))
-    end = isend(board, step)
-    if end:
-        count['AI' if end == ainum else 'Iterator'] += 1
-        assert end != ainum, 'end:%s, ainum:%s, but last step was Iterator.' % (end, ainum)
-        if end == ainum:
-            log.info('AI wins the game.')
-        else:
-            log.info('Iterator wins the game.')
-        dk.add(deepcopy(board), 1 if end == 1 else 0)
-        return
+    if 9 >= step >= 6:  # The game may have ended
+        end = isend(board, step)
+        if end:
+            count['AI' if end == ainum else 'Iterator'] += 1
+            assert end != ainum, 'end:%s, ainum:%s, but last step was Iterator.' % (end, ainum)
+            assert end != 0.5
+            if end == ainum:
+                log.info('AI wins the game.')
+            else:
+                log.info('Iterator wins the game.')
+            dk.add(deepcopy(board), end % 2)
+            return
     elif step == 10:
         count['Draw'] += 1
         log.info('The game ended in draw.')
+        dk.add(deepcopy(board), 0.5)
         return
     i, j = algorithm(board, ainum, step)
     assert board[i][j] == 0, 'pos: %d, %d' % (i, j)
@@ -144,21 +147,23 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
     step += 1
     log.info('next step: %d by %s. current board:%s' %
              (step, 'Iterator', printboard(board, None)))
-    end = isend(board, step)
-    if end:
-        count['AI' if end == ainum else 'Iterator'] += 1
-        board[i][j] = 0
-        assert end == ainum, 'end:%s, ainum:%s, but last step was AI.' % (end, ainum)
-        if end == ainum:
-            log.info('AI wins the game.')
-        else:
-            log.info('Iterator wins the game.')
-        dk.add(deepcopy(board), 1 if end == 1 else 0)
-        return
+    if 9 >= step >= 6:
+        end = isend(board, step)
+        if end:
+            count['AI' if end == ainum else 'Iterator'] += 1
+            board[i][j] = 0
+            assert end == ainum, 'end:%s, ainum:%s, but last step was AI.' % (end, ainum)
+            if end == ainum:
+                log.info('AI wins the game.')
+            else:
+                log.info('Iterator wins the game.')
+            dk.add(deepcopy(board), end % 2)
+            return
     elif step == 10:
         count['Draw'] += 1
         board[i][j] = 0
         log.info('The game ended in draw.')
+        dk.add(deepcopy(board), 0.5)
         return
     for k, subboard in enumerate(emptyspace(board, step)):
         log.info('enters %dth subboard on step %d' % (k+1, step))
