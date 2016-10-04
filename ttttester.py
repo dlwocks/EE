@@ -56,7 +56,7 @@ def isend(board, turn=None):
     for end in map(_isend, _row_gen(board)):
         if end:
             return end
-    if turn == 9:
+    if turn == 10:
         return 0.5
 
 
@@ -147,7 +147,7 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
     step += 1
     log.info('next step: %d by %s. current board:%s' %
              (step, 'Iterator', printboard(board, None)))
-    if 9 >= step >= 6:
+    if 9 >= step >= 6:  # The game may have ended
         end = isend(board, step)
         if end:
             count['AI' if end == ainum else 'Iterator'] += 1
