@@ -81,7 +81,7 @@ class logreg_ai(object):
         else:
             return largest
 
-    def startlearn(self, game='converge', difftol=0.01, opponent='random'):
+    def startlearn(self, game='converge', difftol=0.01, opponent='random', graph=True):
         if game == 'converge':
             iterator = count()
             THETA_CHECK_STEP = 10
@@ -127,15 +127,16 @@ class logreg_ai(object):
         theta_rec.append(self.theta_value)
         print('learning successfully terminated with %d game(s) done.'
               'Final theta value:\n%s' % (c+1, repr(self.theta_value)))
-        theta_rec = array(theta_rec).T
-        for i in range(9):
-            plt.plot([i for i in range(0, c+1, THETA_CHECK_STEP)], theta_rec[i])
-        plt.show()
-        plt.close('all')
-        for i in range(9):
-            plt.plot([i for i in range(0, c+1, THETA_CHECK_STEP)], self._getdiff(theta_rec[i]))
-        plt.plot([i for i in range(0, c+1, THETA_CHECK_STEP)], [0 for i in range(len(theta_rec[0]))], linewidth=2.0, color='black')
-        plt.show()
+        if graph:
+            theta_rec = array(theta_rec).T
+            for i in range(9):
+                plt.plot([i for i in range(0, c+2, THETA_CHECK_STEP)], theta_rec[i])
+            plt.show()
+            plt.close('all')
+            for i in range(9):
+                plt.plot([i for i in range(0, c+2, THETA_CHECK_STEP)], self._getdiff(theta_rec[i]))
+            plt.plot([i for i in range(0, c+2, THETA_CHECK_STEP)], [0 for i in range(len(theta_rec[0]))], linewidth=2.0, color='black')
+            plt.show()
         return self
 
 if __name__ == '__main__':
