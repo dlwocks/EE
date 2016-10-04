@@ -88,20 +88,21 @@ class logreg_ai(object):
         else:
             iterator = range(game)
             THETA_CHECK_STEP = game // 100
-        thetas = []
+        theta_rec = []
         for c in iterator:
             if c % THETA_CHECK_STEP == 0:
                 if c != 0:
                     if game == 'converge' and c >= THETA_CHECK_STEP * 2:
-                        div = self._checkdiv(thetas, difftol)
+                        div = self._checkdiv(theta_rec, difftol)
                         if not div:
                             print('%d games done: Theta value has successfully converged.' % c)
+                            c -= 1
                             break
                         else:
                             print('%d games done: Theta value is yet to converge. Largest divergence: %f' % (c, div))
                     else:
                         print('%d games done..' % c)
-                thetas.append(self.theta_value)
+                theta_rec.append(self.theta_value)
             board = [[0 for i in range(3)]for i in range(3)]
             ainum = randint(1, 2)
             end = 0
@@ -117,22 +118,23 @@ class logreg_ai(object):
                     else:
                         raise ValueError('param opponent is not self or random.')
                 board[i][j] = step
-                end = isend(board, step+1)
-                if end in [1, 2, 0.5]:
-                    self.train_value(board, end)
-                    break
+                if 9 >= step >= 5:
+                    end = isend(board, step+1)
+                    if end:
+                        self.train_value(board, end)
+                        break
                 step += 1
-        thetas.append(self.theta_value)
+        theta_rec.append(self.theta_value)
         print('learning successfully terminated with %d game(s) done.'
-              'Final theta value:\n%s' % (c, repr(self.theta_value)))
-        thetas = array(thetas).T
+              'Final theta value:\n%s' % (c+1, repr(self.theta_value)))
+        theta_rec = array(theta_rec).T
         for i in range(9):
-            plt.plot([i for i in range(0, c+1, THETA_CHECK_STEP)], thetas[i])
+            plt.plot([i for i in range(0, c+1, THETA_CHECK_STEP)], theta_rec[i])
         plt.show()
         plt.close('all')
         for i in range(9):
-            plt.plot([i for i in range(0, c+1, THETA_CHECK_STEP)], self._getdiff(thetas[i]))
-        plt.plot([i for i in range(0, c+1, THETA_CHECK_STEP)], [0 for i in range(len(thetas[0]))], linewidth=2.0, color='black')
+            plt.plot([i for i in range(0, c+1, THETA_CHECK_STEP)], self._getdiff(theta_rec[i]))
+        plt.plot([i for i in range(0, c+1, THETA_CHECK_STEP)], [0 for i in range(len(theta_rec[0]))], linewidth=2.0, color='black')
         plt.show()
         return self
 
