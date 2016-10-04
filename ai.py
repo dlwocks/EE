@@ -1,7 +1,7 @@
 import logging as log
 from itertools import product
 
-from ttttester import isend
+from ttthelper import isend
 
 
 def _permutation_3(row):

@@ -5,8 +5,8 @@ from itertools import repeat, count
 from random import random, randint
 import matplotlib.pyplot as plt
 
-from tttlearning import costfunc, costfunc_d, sigmoid
-from ttttester import isend
+from learningfunc import costfunc, costfunc_d, sigmoid
+from ttthelper import isend
 
 
 class logreg_ai(object):
@@ -115,7 +115,7 @@ class logreg_ai(object):
                     elif opponent == 'random':
                         i, j = self._randomstep(board)
                     else:
-                        raise ValueError, 'param opponent is not self or random.'
+                        raise ValueError('param opponent is not self or random.')
                 board[i][j] = step
                 end = isend(board, step+1)
                 if end in [1, 2, 0.5]:

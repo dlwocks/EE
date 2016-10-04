@@ -11,6 +11,7 @@ from copy import copy, deepcopy
 from random import randint
 
 from ai import algorithm_wiki
+from ttthelper import isend, printboard
 
 global count
 
@@ -20,57 +21,6 @@ log.basicConfig(filename='ttttester.log',
                 format='%(asctime)s %(message)s')
 RETURNBEFORE = False
 count = {'AI': 0, 'Iterator': 0, 'Draw': 0}
-
-
-def printboard(board, signmap={0: "+", 1: "O", 2: "X"}, hspace='-'):
-    '''
-    Board printer.
-    '''
-    ret = '\n'
-    for y, x in product(range(len(board)), range(len(board[0]))):
-        ret += str(signmap[board[y][x]]) if signmap else str(board[y][x])
-        ret += '\n' if x == len(board[0])-1 else hspace
-    return ret
-
-
-def _isend(nums):
-    """
-    Return 1 if the odd player wins by this set.
-    Return 2 if the even player wins by this set.
-    Return 0 elsewise.
-    """
-    num1, num2, num3 = nums
-    if num1 == 0 or num2 == 0 or num3 == 0:
-        return 0
-    if num1 % 2 == num2 % 2 == num3 % 2:
-        return 1 if num1 % 2 else 2
-    return 0
-
-
-def isend(board, turn=None):
-    """
-    Return 1 if the odd player wins the game.
-    Return 2 if the even player wins the game.
-    Return None elsewise (implicitly)
-    """
-    if turn == 10:
-        return 0.5
-    for end in map(_isend, _row_gen(board)):
-        if end:
-            return end
-
-
-def _row_gen(board):
-    '''
-    There are 8 ways to end a tic-tac-toe:
-    horiziontal 3, vertical 3, diagonal 2.
-    This generates every condition.
-    '''
-    for i in range(3):
-        yield [board[i][0], board[i][1], board[i][2]]
-        yield [board[0][i], board[1][i], board[2][i]]
-    yield[board[0][0], board[1][1], board[2][2]]
-    yield[board[0][2], board[1][1], board[2][0]]
 
 
 def emptyspace(board, step):
@@ -131,12 +81,12 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
             assert end != ainum, 'end:%s, ainum:%s, but last step was Iterator.' % (end, ainum)
             assert end != 0.5
             log.info('Iterator wins the game.')
-            dk.add(deepcopy(board), end % 2)
+            # dk.add(deepcopy(board), end % 2)
             return
     elif step == 10:
         count['Draw'] += 1
         log.info('The game ended in draw.')
-        dk.add(deepcopy(board), 0.5)
+        # dk.add(deepcopy(board), 0.5)
         return
     i, j = algorithm(board, ainum, step)
     assert board[i][j] == 0, 'pos: %d, %d' % (i, j)
@@ -151,13 +101,13 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
             board[i][j] = 0
             assert end == ainum, 'end:%s, ainum:%s, but last step was AI.' % (end, ainum)
             log.info('AI wins the game.')
-            dk.add(deepcopy(board), end % 2)
+            # dk.add(deepcopy(board), end % 2)
             return
     elif step == 10:
         count['Draw'] += 1
         board[i][j] = 0
         log.info('The game ended in draw.')
-        dk.add(deepcopy(board), 0.5)
+        # dk.add(deepcopy(board), 0.5)
         return
     for k, subboard in enumerate(emptyspace(board, step)):
         log.info('enters %dth subboard on step %d' % (k+1, step))
@@ -165,18 +115,20 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
     board[i][j] = 0
 
 
-def complete_check(algorithm=algorithm_wiki):
+def complete_check(algorithm=algorithm_wiki, pt=False):
     global count
-    dk.clear()
+    count = {'AI': 0, 'Iterator': 0, 'Draw': 0}
+    # dk.clear()
     _complete_check(algorithm, ainum=1)
-    print('AI goes first: ' + str(count))
+    if pt:
+        print('AI goes first: ' + str(count))
     board = [[0 for i in range(3)] for j in range(3)]
     for subboard in emptyspace(board, 1):
         _complete_check(algorithm, subboard, 2)
-    print('Total:%s' % str(count))
-    print('Algorithm Evaluation Point:%0.2f' % ((count['AI'] * 2 + count['Draw'])/sum(count.values())))
-    count = {'AI': 0, 'Iterator': 0, 'Draw': 0}
-    return dk
+    if pt:
+        print('Total:%s' % str(count))
+        print('Algorithm Evaluation Point:%0.2f' % ((count['AI'] * 2 + count['Draw'])/sum(count.values())))
+    return (count['AI'] * 2 + count['Draw'])/sum(count.values())
 
 if __name__ == '__main__':
     complete_check()
