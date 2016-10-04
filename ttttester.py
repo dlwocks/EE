@@ -173,7 +173,8 @@ def complete_check(algorithm=algorithm_wiki):
     board = [[0 for i in range(3)] for j in range(3)]
     for subboard in emptyspace(board, 1):
         _complete_check(algorithm, subboard, 2)
-    print('Total:' + str(count))
+    print('Total:%s' % str(count))
+    print('Algorithm Evaluation Point:%0.2f' % ((count['AI'] * 2 + count['Draw'])/sum(count.values())))
     count = {'AI': 0, 'Iterator': 0, 'Draw': 0}
     return dk
 
