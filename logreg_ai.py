@@ -40,7 +40,7 @@ class logreg_ai(object):
     def train_value(self, board, end):
         assert end == 1 or end == 2 or end == 0.5
         if end == 2:
-            end == 0
+            end = 0
         self._add(board, end)
         self.theta_value = minimize(costfunc, self.theta_value, args=(array(self.data), array(self.ans)), jac=costfunc_d, method='BFGS').x
 
