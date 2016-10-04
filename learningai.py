@@ -115,7 +115,7 @@ class logreg_ai(object):
                     elif opponent == 'random':
                         i, j = self._randomstep(board)
                     else:
-                        assert False, 'param opponent is not self or random.'
+                        raise ValueError, 'param opponent is not self or random.'
                 board[i][j] = step
                 end = isend(board, step+1)
                 if end in [1, 2, 0.5]:
