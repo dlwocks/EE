@@ -81,7 +81,7 @@ class logreg_ai(object):
         else:
             return largest
 
-    def startlearn(self, game='converge', difftol=0.01, opponent='random', graph=True):
+    def startlearn(self, game='converge', difftol=0.01, opponent='random', graph=True, pt=True):
         if game == 'converge':
             iterator = count()
             THETA_CHECK_STEP = 10
@@ -95,12 +95,13 @@ class logreg_ai(object):
                     if game == 'converge' and c >= THETA_CHECK_STEP * 2:
                         div = self._checkdiv(theta_rec, difftol)
                         if not div:
-                            print('%d games done: Theta value has successfully converged.' % c)
+                            if pt:
+                                print('%d games done: Theta value has successfully converged.' % c)
                             c -= 1
                             break
-                        else:
+                        elif pt:
                             print('%d games done: Theta value is yet to converge. Largest divergence: %f' % (c, div))
-                    else:
+                    elif pt:
                         print('%d games done..' % c)
                 theta_rec.append(self.theta_value)
             board = [[0 for i in range(3)]for i in range(3)]
@@ -125,7 +126,8 @@ class logreg_ai(object):
                         break
                 step += 1
         theta_rec.append(self.theta_value)
-        print('learning successfully terminated with %d game(s) done.'
+        if pt:
+            print('learning successfully terminated with %d game(s) done.'
               'Final theta value:\n%s' % (c+1, repr(self.theta_value)))
         if graph:
             theta_rec = array(theta_rec).T
