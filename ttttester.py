@@ -53,11 +53,11 @@ def isend(board, turn=None):
     Return 2 if the even player wins the game.
     Return None elsewise (implicitly)
     """
+    if turn == 10:
+        return 0.5
     for end in map(_isend, _row_gen(board)):
         if end:
             return end
-    if turn == 10:
-        return 0.5
 
 
 def _row_gen(board):
@@ -127,13 +127,10 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
     if 9 >= step >= 6:  # The game may have ended
         end = isend(board, step)
         if end:
-            count['AI' if end == ainum else 'Iterator'] += 1
+            count['Iterator'] += 1
             assert end != ainum, 'end:%s, ainum:%s, but last step was Iterator.' % (end, ainum)
             assert end != 0.5
-            if end == ainum:
-                log.info('AI wins the game.')
-            else:
-                log.info('Iterator wins the game.')
+            log.info('Iterator wins the game.')
             dk.add(deepcopy(board), end % 2)
             return
     elif step == 10:
@@ -150,13 +147,10 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
     if 9 >= step >= 6:  # The game may have ended
         end = isend(board, step)
         if end:
-            count['AI' if end == ainum else 'Iterator'] += 1
+            count['AI'] += 1
             board[i][j] = 0
             assert end == ainum, 'end:%s, ainum:%s, but last step was AI.' % (end, ainum)
-            if end == ainum:
-                log.info('AI wins the game.')
-            else:
-                log.info('Iterator wins the game.')
+            log.info('AI wins the game.')
             dk.add(deepcopy(board), end % 2)
             return
     elif step == 10:
