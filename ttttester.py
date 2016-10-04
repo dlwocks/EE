@@ -119,7 +119,7 @@ def randomstep(board, _, __):
             return i, j
 
 
-def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
+def _complete_check(algorithm, board=None, step=1, ainum=2):
     if board is None:
         board = [[0 for i in range(3)]for j in range(3)]
     log.info('next step: %d by %s. current board:%s' %
@@ -162,21 +162,21 @@ def _exhaustive_check(algorithm, board=None, step=1, ainum=2):
         return
     for k, subboard in enumerate(emptyspace(board, step)):
         log.info('enters %dth subboard on step %d' % (k+1, step))
-        _exhaustive_check(algorithm, subboard, step+1, ainum)
+        _complete_check(algorithm, subboard, step+1, ainum)
     board[i][j] = 0
 
 
-def exhaustive_check(algorithm=algorithm_wiki):
+def complete_check(algorithm=algorithm_wiki):
     global count
     dk.clear()
-    _exhaustive_check(algorithm, ainum=1)
+    _complete_check(algorithm, ainum=1)
     print('AI goes first: ' + str(count))
     board = [[0 for i in range(3)] for j in range(3)]
     for subboard in emptyspace(board, 1):
-        _exhaustive_check(algorithm, subboard, 2)
+        _complete_check(algorithm, subboard, 2)
     print('Total:' + str(count))
     count = {'AI': 0, 'Iterator': 0, 'Draw': 0}
     return dk
 
 if __name__ == '__main__':
-    exhaustive_check()
+    complete_check()

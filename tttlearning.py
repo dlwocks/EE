@@ -2,7 +2,7 @@ from numpy import array, dot, log, e
 from scipy.optimize import minimize
 from random import random
 
-from ttttester import exhaustive_check
+from ttttester import complete_check
 
 
 def sigmoid(z):
@@ -26,7 +26,7 @@ testdata = array([[0, 0, 0, 0, 1, 0, 0, 0, 0],
 testans = array([1, 1, 1, 1, 1, 0])
 
 if __name__ == '__main__':
-    dk = exhaustive_check()
+    dk = complete_check()
     data, ans = dk.fetch()
     theta = array([0 for i in range(9)])
     print(theta)

@@ -1,6 +1,8 @@
 import logging as log
 from itertools import product
 
+from ttttester import isend
+
 
 def _permutation_3(row):
     yield row[0], row[1], row[2]
