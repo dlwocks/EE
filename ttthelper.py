@@ -50,7 +50,7 @@ def isend(board, nx=None):
             return end
     if nx == 10:
         return 0.5
-    else:
+    elif nx is None:
         for i in range(3):
             for j in range(3):
                 if board[i][j] == 0:
