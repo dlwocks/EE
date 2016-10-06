@@ -15,4 +15,3 @@ def costfunc_d(theta, data, ans):
     if not all(sigmoid(dot(data, theta))):
         raise ValueError
     return dot(data.T, (sigmoid(dot(data, theta)) - ans)) / len(theta)
-

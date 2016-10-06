@@ -13,9 +13,12 @@ class logreg_ai(object):
     VAL_FEATURE_NUM = 9
     data = []
     ans = []
+    feature = []
 
-    def __init__(self, t=array([0 for _ in range(VAL_FEATURE_NUM)])):
+    def __init__(self, t=array([0 for _ in range(VAL_FEATURE_NUM)]), feature=['board']):
         self.theta_value = t
+        if not feature:
+            raise ValueError('no feature is given')
 
     def _emptyspace_pos(self, board, step):
         for i in range(3):
@@ -45,12 +48,12 @@ class logreg_ai(object):
         self.theta_value = minimize(costfunc, self.theta_value, args=(array(self.data), array(self.ans)), jac=costfunc_d, method='BFGS').x
 
     def getstep(self, board, ainum, step):
-        mi, mj, maxdot = 0, 0, -10000
+        mi, mj, mdot = 0, 0, -10000
         for nextboard, i, j in self._emptyspace_pos(board, step):
             nextboard = array(nextboard).reshape((9,))
             dotval = dot(nextboard, self.theta_value)
-            if dotval > maxdot:
-                mi, mj, maxdot = i, j, dotval
+            if dotval > mdot:
+                mi, mj, mdot = i, j, dotval
         return mi, mj
 
     def _randomstep(self, board):

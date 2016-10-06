@@ -72,6 +72,7 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
             count['AI'] += 1
             board[i][j] = 0
             assert end == ainum, 'end:%s, ainum:%s, but last step was AI.' % (end, ainum)
+            assert end != 0.5
             log.info('AI wins the game.')
             return
     elif step == 10:
