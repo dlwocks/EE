@@ -11,12 +11,12 @@ from ttthelper import isend
 
 class logreg_ai(object):
     VAL_FEATURE_NUM = 9
-    data = []
-    ans = []
-    feature = []
 
     def __init__(self, t=array([0 for _ in range(VAL_FEATURE_NUM)]), feature=['board']):
         self.theta_value = t
+        self.data = []
+        self.ans = []
+        self.feature = feature
         if not feature:
             raise ValueError('no feature is given')
 
