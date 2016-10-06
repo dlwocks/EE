@@ -10,8 +10,8 @@ def _row_gen(board):
     for i in range(3):
         yield [board[i][0], board[i][1], board[i][2]]
         yield [board[0][i], board[1][i], board[2][i]]
-    yield[board[0][0], board[1][1], board[2][2]]
-    yield[board[0][2], board[1][1], board[2][0]]
+    yield [board[0][0], board[1][1], board[2][2]]
+    yield [board[0][2], board[1][1], board[2][0]]
 
 
 def printboard(board, signmap={0: "+", 1: "O", 2: "X"}, hspace='-'):
@@ -39,14 +39,20 @@ def _isend(nums):
     return 0
 
 
-def isend(board, turn=None):
+def isend(board, nx=None):
     """
     Return 1 if the odd player wins the game.
     Return 2 if the even player wins the game.
     Return None elsewise (implicitly)
     """
-    if turn == 10:
-        return 0.5
     for end in map(_isend, _row_gen(board)):
         if end:
             return end
+    if nx == 10:
+        return 0.5
+    else:
+        for i in range(3):
+            for j in range(3):
+                if board[i][j] == 0:
+                    return 0
+        return 0.5
