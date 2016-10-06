@@ -7,7 +7,7 @@ def sigmoid(z):
 
 def costfunc(theta, data, ans):
     if not all(sigmoid(dot(data, theta))):
-        raise ValueError(theta)
+        raise ValueError('theta: %s\ndata:%s\nans:%s' % (repr(theta),repr(data),repr(ans)))
     return sum(ans * -log(sigmoid(dot(data, theta))) - (1 - ans) * log(1 - sigmoid(dot(data, theta))))
 
 

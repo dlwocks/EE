@@ -1,4 +1,4 @@
-from numpy import array, dot, log, e
+from numpy import array, dot, log, e, ndarray
 from scipy.optimize import minimize
 from copy import copy
 from itertools import repeat, count
@@ -20,6 +20,11 @@ class logreg_ai(object):
         if not feature:
             raise ValueError('no feature is given')
 
+    def _transform_board(self, board):
+        if not (isinstance(board, ndarray) and board.shape == (9,)):
+            raise ValueError('inputted board is not an array or is not 1d')
+        return array([0 if not i else 1 if i % 2 else -1 for i in board])
+
     def _emptyspace_pos(self, board, step):
         for i in range(3):
             for j in range(3):
@@ -33,7 +38,7 @@ class logreg_ai(object):
         arr = [0 for i in range(9)]
         for i in range(1, 10):
             try:
-                arr[board.index(i)] = 1 if i % 2 else -1
+                arr[board.index(i)] = 1 if i % 2 else -1  # FIXME
             except ValueError:
                 i -= 1
                 break
@@ -48,11 +53,13 @@ class logreg_ai(object):
         self.theta_value = minimize(costfunc, self.theta_value, args=(array(self.data), array(self.ans)), jac=costfunc_d, method='BFGS').x
 
     def getstep(self, board, ainum, step):
-        mi, mj, mdot = 0, 0, -10000
-        for nextboard, i, j in self._emptyspace_pos(board, step):
-            nextboard = array(nextboard).reshape((9,))
+        mi, mj, mdot = 0, 0, -10000 if ainum % 2 else 10000
+        for nextboard, i, j in self._emptyspace_pos(board, step):  # FIXME
+            nextboard = self._transform_board(array(nextboard).reshape((9,)))
             dotval = dot(nextboard, self.theta_value)
-            if dotval > mdot:
+            if ainum % 2 == 1 and dotval > mdot:
+                mi, mj, mdot = i, j, dotval
+            elif ainum % 2 == 0 and dotval < mdot:
                 mi, mj, mdot = i, j, dotval
         return mi, mj
 
@@ -85,6 +92,8 @@ class logreg_ai(object):
             return largest
 
     def startlearn(self, game='converge', difftol=0.01, opponent='random', graph=True, pt=True):
+        if opponent not in ['self', 'random']:
+            raise ValueError('param opponent is not self or random.')
         if game == 'converge':
             iterator = count()
             THETA_CHECK_STEP = 10
@@ -119,8 +128,7 @@ class logreg_ai(object):
                         i, j = self.getstep(board, ainum, step)
                     elif opponent == 'random':
                         i, j = self._randomstep(board)
-                    else:
-                        raise ValueError('param opponent is not self or random.')
+                assert board[i][j] == 0
                 board[i][j] = step
                 if 9 >= step >= 5:
                     end = isend(board, step+1)
@@ -131,7 +139,7 @@ class logreg_ai(object):
         theta_rec.append(self.theta_value)
         if pt:
             print('learning successfully terminated with %d game(s) done.'
-              'Final theta value:\n%s' % (c+1, repr(self.theta_value)))
+                  'Final theta value:\n%s' % (c+1, repr(self.theta_value)))
         if graph:
             theta_rec = array(theta_rec).T
             for i in range(9):
