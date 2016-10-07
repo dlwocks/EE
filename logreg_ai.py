@@ -5,12 +5,17 @@ from itertools import repeat, count
 from random import random, randint
 import matplotlib.pyplot as plt
 
-from learningfunc import costfunc, costfunc_d, sigmoid
+from learningfunc import costfunc, costfunc_d, sigmoid, gen_piece
 from ttthelper import isend
+
+
+def _board(board):
+    return [0 if not i else 1 if i % 2 else -1 for i in board]
 
 
 class logreg_ai(object):
     VAL_FEATURE_NUM = 9
+    FEATURE_MAP = {'board': _board}
 
     def __init__(self, t=array([(random()-0.5)/1000 for _ in range(VAL_FEATURE_NUM)]), feature=['board']):
         self.theta_value = t
@@ -19,11 +24,6 @@ class logreg_ai(object):
         self.feature = feature
         if not feature:
             raise ValueError('no feature is given')
-
-    def _transform_board(self, board):
-        if not (isinstance(board, ndarray) and board.shape == (9,)):
-            raise ValueError('inputted board is not an array or is not 1d')
-        return array([0 if not i else 1 if i % 2 else -1 for i in board])
 
     def _emptyspace_pos(self, board, step):
         for i in range(3):
@@ -34,16 +34,25 @@ class logreg_ai(object):
                     board[i][j] = 0
 
     def _add(self, board, end):
-        board = list(array(board).reshape((9,)))
-        arr = [0 for i in range(9)]
-        for i in range(1, 10):
-            try:
-                arr[board.index(i)] = 1 if i % 2 else -1  # FIXME
-            except ValueError:
-                i -= 1
-                break
-            self.data.append(copy(arr))
-        self.ans.extend(list(repeat(end, i)))
+        feature = self.featureize_in_piece(board)
+        self.data.extend(feature)
+        self.ans.extend(list(repeat(end, len(feature))))
+
+    def featureize_in_piece(self, board):
+        piece = gen_piece(list(array(board).reshape((9,))))
+        data = []
+        for p in piece:
+            temp = []
+            for f in self.feature:
+                temp.extend(self.FEATURE_MAP[f](p))
+            data.append(temp)
+        return data
+
+    def featureize_final(self, board):
+        ret = []
+        for f in self.feature:
+            ret.extend(self.FEATURE_MAP[f](list(array(board).reshape((9,)))))
+        return ret
 
     def train_value(self, board, end):
         assert end == 1 or end == 2 or end == 0.5
@@ -54,8 +63,8 @@ class logreg_ai(object):
 
     def getstep(self, board, ainum, step):
         mi, mj, mdot = 0, 0, -10000 if ainum % 2 else 10000
-        for nextboard, i, j in self._emptyspace_pos(board, step):  # FIXME
-            nextboard = self._transform_board(array(nextboard).reshape((9,)))
+        for nextboard, i, j in self._emptyspace_pos(board, step):
+            nextboard = array(self.featureize_final(nextboard)).reshape((9,))
             dotval = dot(nextboard, self.theta_value)
             if ainum % 2 == 1 and dotval > mdot:
                 mi, mj, mdot = i, j, dotval
