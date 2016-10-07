@@ -12,7 +12,7 @@ from ttthelper import isend
 class logreg_ai(object):
     VAL_FEATURE_NUM = 9
 
-    def __init__(self, t=array([0 for _ in range(VAL_FEATURE_NUM)]), feature=['board']):
+    def __init__(self, t=array([(random()-0.5)/1000 for _ in range(VAL_FEATURE_NUM)]), feature=['board']):
         self.theta_value = t
         self.data = []
         self.ans = []
