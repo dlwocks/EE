@@ -80,7 +80,7 @@ class logreg_ai(object):
     def getstep(self, board, ainum, step):
         mi, mj, mdot = 0, 0, -10000 if ainum % 2 or not self.minmax else 10000
         for nextboard, i, j in self._emptyspace_pos(board, step):
-            nextboard = array(self.featureize_final(nextboard)).reshape((self.feature_num,))
+            nextboard = array(self.featureize_final(nextboard))
             dotval = dot(nextboard, self.theta_value)
             if self.minmax:
                 if ainum % 2 == 1 and dotval > mdot:
