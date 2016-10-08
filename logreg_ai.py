@@ -69,7 +69,7 @@ class logreg_ai(object):
         return ret
 
     def train_value(self, board, end):
-        assert end == 1 or end == 2 or end == 0.5
+        assert end in [1, 2, 0.5]
         if end == 2:
             end = 0
         self._add(board, end)
@@ -93,13 +93,10 @@ class logreg_ai(object):
         return mi, mj
 
     def _randomstep(self, board):
-        count = 0
         while True:
             i, j = randint(0, 2), randint(0, 2)
             if board[i][j] == 0:
                 return i, j
-            count += 1
-            assert count <= 10000
 
     def _getdiff(self, arr):
         for i in range(len(arr)-1, 0, -1):
