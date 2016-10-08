@@ -4,6 +4,7 @@ from copy import copy
 from itertools import repeat, count
 from random import random, randint
 import matplotlib.pyplot as plt
+import warnings
 
 from learningfunc import costfunc, costfunc_d, sigmoid, gen_piece
 from ttthelper import isend
@@ -13,17 +14,29 @@ def _board(board):
     return [0 if not i else 1 if i % 2 else -1 for i in board]
 
 
-class logreg_ai(object):
-    VAL_FEATURE_NUM = 9
-    FEATURE_MAP = {'board': _board}
+def _absboard(board):
+    return [0 if not i else 1 for i in board]
 
-    def __init__(self, t=array([(random()-0.5)/1000 for _ in range(VAL_FEATURE_NUM)]), feature=['board']):
-        self.theta_value = t
+
+class logreg_ai(object):
+    feature_num = 9
+    FEATURE_FUNC_MAP = {'board': _board, 'abs': _absboard}
+    FEATURE_NUM_MAP = {'board': 9, 'abs': 9}
+
+    def __init__(self, t=None, feature=['board']):
         self.data = []
         self.ans = []
-        self.feature = feature
         if not feature:
             raise ValueError('no feature is given')
+        for f in feature:
+            if f not in self.FEATURE_FUNC_MAP.keys():
+                raise ValueError('The feature "%s" is not supported' % f)
+        self.feature = feature
+        self.feature_num = sum([self.FEATURE_NUM_MAP[f] for f in feature])
+        if t is None:
+            self.theta_value = array([(random()-0.5)/1000 for _ in range(self.feature_num)])
+        else:
+            self.theta_value = t
 
     def _emptyspace_pos(self, board, step):
         for i in range(3):
@@ -44,14 +57,14 @@ class logreg_ai(object):
         for p in piece:
             temp = []
             for f in self.feature:
-                temp.extend(self.FEATURE_MAP[f](p))
+                temp.extend(self.FEATURE_FUNC_MAP[f](p))
             data.append(temp)
         return data
 
     def featureize_final(self, board):
         ret = []
         for f in self.feature:
-            ret.extend(self.FEATURE_MAP[f](list(array(board).reshape((9,)))))
+            ret.extend(self.FEATURE_FUNC_MAP[f](list(array(board).reshape((9,)))))
         return ret
 
     def train_value(self, board, end):
@@ -59,12 +72,14 @@ class logreg_ai(object):
         if end == 2:
             end = 0
         self._add(board, end)
-        self.theta_value = minimize(costfunc, self.theta_value, args=(array(self.data), array(self.ans)), jac=costfunc_d, method='BFGS').x
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.theta_value = minimize(costfunc, self.theta_value, args=(array(self.data), array(self.ans)), jac=costfunc_d, method='BFGS').x
 
     def getstep(self, board, ainum, step):
         mi, mj, mdot = 0, 0, -10000 if ainum % 2 else 10000
         for nextboard, i, j in self._emptyspace_pos(board, step):
-            nextboard = array(self.featureize_final(nextboard)).reshape((9,))
+            nextboard = array(self.featureize_final(nextboard)).reshape((self.feature_num,))
             dotval = dot(nextboard, self.theta_value)
             if ainum % 2 == 1 and dotval > mdot:
                 mi, mj, mdot = i, j, dotval
@@ -89,7 +104,7 @@ class logreg_ai(object):
     def _checkdiv(self, arr, difftol):
         conv = True
         largest = 0
-        for f in range(self.VAL_FEATURE_NUM):
+        for f in range(self.feature_num):
             diff = abs(arr[-1][f] - arr[-2][f])
             if diff > difftol:
                 conv = False

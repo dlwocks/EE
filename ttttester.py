@@ -86,7 +86,7 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
     board[i][j] = 0
 
 
-def complete_check(algorithm=algorithm_wiki, pt=True):
+def complete_check(algorithm=algorithm_wiki, pt=False):
     global count
     count = {'AI': 0, 'Iterator': 0, 'Draw': 0}
     _complete_check(algorithm, ainum=1)

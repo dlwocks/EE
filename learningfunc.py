@@ -1,7 +1,6 @@
 from numpy import array, dot, log, e
 from copy import copy
 
-
 def sigmoid(z):
     return 1/(1+e**(-z))
 
