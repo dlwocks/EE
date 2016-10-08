@@ -23,7 +23,8 @@ class logreg_ai(object):
     FEATURE_FUNC_MAP = {'board': _board, 'abs': _absboard}
     FEATURE_NUM_MAP = {'board': 9, 'abs': 9}
 
-    def __init__(self, t=None, feature=['board']):
+    def __init__(self, t=None, feature=['board'], minmax=True):
+        self.minmax = minmax
         self.data = []
         self.ans = []
         if not feature:
@@ -77,14 +78,18 @@ class logreg_ai(object):
             self.theta_value = minimize(costfunc, self.theta_value, args=(array(self.data), array(self.ans)), jac=costfunc_d, method='BFGS').x
 
     def getstep(self, board, ainum, step):
-        mi, mj, mdot = 0, 0, -10000 if ainum % 2 else 10000
+        mi, mj, mdot = 0, 0, -10000 if ainum % 2 or not self.minmax else 10000
         for nextboard, i, j in self._emptyspace_pos(board, step):
             nextboard = array(self.featureize_final(nextboard)).reshape((self.feature_num,))
             dotval = dot(nextboard, self.theta_value)
-            if ainum % 2 == 1 and dotval > mdot:
-                mi, mj, mdot = i, j, dotval
-            elif ainum % 2 == 0 and dotval < mdot:
-                mi, mj, mdot = i, j, dotval
+            if self.minmax:
+                if ainum % 2 == 1 and dotval > mdot:
+                    mi, mj, mdot = i, j, dotval
+                elif ainum % 2 == 0 and dotval < mdot:
+                    mi, mj, mdot = i, j, dotval
+            else:
+                if dotval > mdot:
+                    mi, mj, mdot = i, j, dotval
         return mi, mj
 
     def _randomstep(self, board):
