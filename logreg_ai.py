@@ -28,10 +28,29 @@ def _lboard(board):
     return [0 if not i or i % 2 != m % 2 else 1 if i % 2 else -1 for i in board]
 
 
+def _oboard(board):
+    return [0 if not i else i if i % 2 else -i for i in board]
+
+
+def _orboard(board):
+    m = max(board)
+    return [0 if not i else (m - i + 1) if i % 2 else -(m - i + 1) for i in board]
+
+
 class logreg_ai(object):
     feature_num = 9
-    FEATURE_FUNC_MAP = {'board': _board, 'abs': _absboard, 'nboard': _nboard, 'lboard': _lboard}
-    FEATURE_NUM_MAP = {'board': 9, 'abs': 9, 'nboard': 9, 'lboard': 9}
+    FEATURE_FUNC_MAP = {'board': _board,
+                        'abs': _absboard,
+                        'nboard': _nboard,
+                        'lboard': _lboard,
+                        'oboard': _oboard,
+                        'orboard': _orboard}
+    FEATURE_NUM_MAP = {'board': 9,
+                       'abs': 9,
+                       'nboard': 9,
+                       'lboard': 9,
+                       'oboard': 9,
+                       'orboard': 9}
 
     def __init__(self, t=None, feature=['board']):
         self.data = []
