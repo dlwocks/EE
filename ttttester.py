@@ -100,5 +100,40 @@ def complete_check(algorithm=algorithm_wiki, pt=False):
         print('Algorithm Evaluation Point:%0.2f' % ((count['AI'] * 2 + count['Draw'])/sum(count.values())))
     return (count['AI'] * 2 + count['Draw'])/sum(count.values())
 
+
+def _board(board):
+    return [[0 if not i else 1 if i % 2 else 2 for i in row]for row in board]
+
+
+def play_with(algorithm, playerfirst=True):
+    board = [[0 for i in range(3)]for i in range(3)]
+    ainum = 2 if playerfirst else 1
+    end = 0
+    step = 1
+    while not end and step < 10:
+        print(printboard(_board(board)))
+        if step % 2 == ainum % 2:
+            i, j = algorithm(board, ainum, step)
+        else:
+            i, j = input('please input your step.').split(',')
+            i, j = int(i), int(j)
+            while board[i][j] != 0:
+                i, j = input('the position is occupied. please select another one.').split(',')
+                i, j = int(i), int(j)
+        board[i][j] = step
+        if 9 >= step >= 5:
+            end = isend(board, step+1)
+            if end:
+                if end == 0.5:
+                    print('the game ended in draw.')
+                elif end % 2 == ainum % 2:
+                    print('AI wins the game.')
+                else:
+                    print("Player wins the game.")
+                print(printboard(_board(board)))
+                break
+        step += 1
+
+
 if __name__ == '__main__':
     complete_check()
