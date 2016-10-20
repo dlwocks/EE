@@ -2,6 +2,7 @@ from numpy import array, dot, log, e, ndarray, append, newaxis
 from random import random
 from copy import copy
 from itertools import chain
+from scipy.optimize import minimize
 
 '''
 Important definition:
@@ -83,32 +84,38 @@ class ann(object):
         else:
             self.theta = array([(random()-0.5)/100 for i in range(self.totalthetalen)])
 
-    def fowardprop(self, inp, return_a=False, return_res=True):
-        if isinstance(inp, list):
-            inp = array(inp)
-        if len(inp) != self.layernum[0]:
-            raise RuntimeError('input size doesn\'t match')
-        if not isinstance(inp, ndarray):
-            raise TypeError('input is not an ndarray')
+    def fowardprop(self, allinp, return_a=False, return_res=True):
+        if isinstance(allinp, list):
+            allinp = array(allinp)
+        elif not isinstance(allinp, ndarray):
+            raise TypeError('input is not a ndarray or a list')
         if return_a:
             a = []
-        for l in range(self.layercount - 1):
-            inp = append(array([1]), inp)  # Add bias unit
-            start, end = self.partialthetalen[l], self.partialthetalen[l+1]
-            thetaseg = self.theta[start: end]
-            inp = _fowardprop(thetaseg, inp)
+        if return_res:
+            res = []
+        for inp in allinp:
+            temp_a = []
+            if len(inp) != self.layernum[0]:
+                raise RuntimeError('input size doesn\'t match')
+            for l in range(self.layercount - 1):
+                inp = append(array([1]), inp)  # Add bias unit
+                start, end = self.partialthetalen[l], self.partialthetalen[l+1]
+                thetaseg = self.theta[start: end]
+                inp = _fowardprop(thetaseg, inp)
+                if return_a:
+                    temp_a.append(inp)
             if return_a:
-                a.append(inp)
+                a.append(temp_a)
+            if return_res:
+                res.append(inp)
         if return_a and return_res:
             return inp, a
         elif return_res:
             return inp
         elif return_a:
             return a
-        else:
-            assert False, 'Why did you even called this function??'
 
-    def costfunc(self, out, ans):
+    def costfunc(self, out, ans, _):
         return sum(ans * -log(out) - (1 - ans) * log(1 - out))
 
     def gradient_single(self, out, ans, a):
@@ -127,4 +134,4 @@ class ann(object):
 
     def train(self, inp, ans):
         out, a = self.fowardprop(inp, return_a=True)
-        self.backprop(out, ans, a)
+        self.theta = minimize(self.costfunc, self.theta, args=(out, ans, a), jac=self.gradient, method='BFGS').x
