@@ -8,6 +8,7 @@ import warnings
 
 from learningfunc import costfunc, costfunc_d, sigmoid, gen_piece
 from ttthelper import isend
+from base_ai import base_ai
 
 
 def _board(board):
@@ -58,7 +59,16 @@ def _ctsur(board):  # with board: 1.06
     return ret
 
 
-class logreg_ai(object):
+def _emptyspace_pos(board, step):
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == 0:
+                board[i][j] = step
+                yield board, i, j
+                board[i][j] = 0
+
+
+class logreg_ai(base_ai):
     feature_num = 9
     FEATURE_FUNC_MAP = {'board': _board,
                         'abs': _absboard,
@@ -90,34 +100,10 @@ class logreg_ai(object):
         else:
             self.theta_value = t
 
-    def _emptyspace_pos(self, board, step):
-        for i in range(3):
-            for j in range(3):
-                if board[i][j] == 0:
-                    board[i][j] = step
-                    yield board, i, j
-                    board[i][j] = 0
-
     def _add(self, board, end):
         feature = self.featureize_in_piece(board)
         self.data.extend(feature)
         self.ans.extend(list(repeat(end, len(feature))))
-
-    def featureize_in_piece(self, board):
-        piece = gen_piece(list(array(board).reshape((9,))))
-        data = []
-        for p in piece:
-            temp = []
-            for f in self.feature:
-                temp.extend(self.FEATURE_FUNC_MAP[f](p))
-            data.append(temp)
-        return data
-
-    def featureize_final(self, board):
-        ret = []
-        for f in self.feature:
-            ret.extend(self.FEATURE_FUNC_MAP[f](list(array(board).reshape((9,)))))
-        return ret
 
     def train_value(self, board, end):
         assert end in [1, 2, 0.5]
@@ -130,7 +116,7 @@ class logreg_ai(object):
 
     def getstep(self, board, ainum, step):
         mi, mj, mdot = 0, 0, -10000 if ainum % 2 else 10000
-        for nextboard, i, j in self._emptyspace_pos(board, step):
+        for nextboard, i, j in _emptyspace_pos(board, step):
             nextboard = array(self.featureize_final(nextboard))
             dotval = dot(nextboard, self.theta_value)
             if ainum % 2 == 1 and dotval > mdot:
