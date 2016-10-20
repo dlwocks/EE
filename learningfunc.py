@@ -67,9 +67,9 @@ class ann(object):
     def __init__(self, layernum, theta=None):
         if not isinstance(layernum, list):
             raise TypeError('param layernum is not list')
-        if len(layernum) < 3:
+        if len(layernum) < 2:
             raise ValueError('param layernum is too small.'
-                             'It should consist input/hidden/output layer')
+                             'It should at least consist input/output layer')
         self.partialthetalen = _thetalen(layernum)
         self.totalthetalen = self.partialthetalen[-1]
         self.layernum = layernum
