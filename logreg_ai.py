@@ -105,7 +105,7 @@ class logreg_ai(base_ai):
         self.data.extend(feature)
         self.ans.extend(list(repeat(end, len(feature))))
 
-    def train_value(self, board, end):
+    def _train_value(self, board, end):
         assert end in [1, 2, 0.5]
         if end == 2:
             end = 0
@@ -192,7 +192,7 @@ class logreg_ai(base_ai):
                 if 9 >= step >= 5:
                     end = isend(board, step+1)
                     if end:
-                        self.train_value(board, end)
+                        self._train_value(board, end)
                         break
                 step += 1
         theta_rec.append(self.theta_value)
