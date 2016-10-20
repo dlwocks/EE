@@ -83,7 +83,7 @@ class ann(object):
         else:
             self.theta = array([(random()-0.5)/100 for i in range(self.totalthetalen)])
 
-    def fowardprop(self, inp, return_a=False):
+    def fowardprop(self, inp, return_a=False, return_res=True):
         if isinstance(inp, list):
             inp = array(inp)
         if len(inp) != self.layernum[0]:
@@ -99,10 +99,14 @@ class ann(object):
             inp = _fowardprop(thetaseg, inp)
             if return_a:
                 a.append(inp)
-        if return_a:
+        if return_a and return_res:
             return inp, a
-        else:
+        elif return_res:
             return inp
+        elif return_a:
+            return a
+        else:
+            assert False, 'Why did you even called this function??'
 
     def costfunc(self, out, ans):
         return sum(ans * -log(out) - (1 - ans) * log(1 - out))
