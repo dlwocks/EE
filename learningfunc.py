@@ -8,6 +8,9 @@ from scipy.optimize import minimize
 Important definition:
 -In an thetaseg, the first n theta represents 11, 12, 13, ..., 1n; that it is for first node in FORMER layer
 '''
+def debug(message, param):
+    print(message +': ' + str(param))
+
 
 def sigmoid(z):
     return 1/(1+e**(-z))
@@ -84,17 +87,18 @@ class ann(object):
         else:
             self.theta = array([(random()-0.5)/100 for i in range(self.totalthetalen)])
 
-    def fowardprop(self, allinp, return_a=False, return_res=True):
+    def fowardprop(self, allinp, return_a=False, return_out=False):
         if isinstance(allinp, list):
             allinp = array(allinp)
         elif not isinstance(allinp, ndarray):
             raise TypeError('input is not a ndarray or a list')
         if return_a:
             a = []
-        if return_res:
-            res = []
+        if return_out:
+            out = []
         for inp in allinp:
-            temp_a = []
+            temp_a = [None]  # To make final len == layercount
+            # debug('inputsize', inp)
             if len(inp) != self.layernum[0]:
                 raise RuntimeError('input size doesn\'t match')
             for l in range(self.layercount - 1):
@@ -103,35 +107,49 @@ class ann(object):
                 thetaseg = self.theta[start: end]
                 inp = _fowardprop(thetaseg, inp)
                 if return_a:
-                    temp_a.append(inp)
+                    temp_a.append(append(array([1]), inp))
             if return_a:
                 a.append(temp_a)
-            if return_res:
-                res.append(inp)
-        if return_a and return_res:
-            return inp, a
-        elif return_res:
-            return inp
+            if return_out:
+                out.append(inp)
+        if return_a and return_out:
+            return out, a
+        elif return_out:
+            return out
         elif return_a:
             return a
+        else:
+            raise RuntimeError('fowardprop call without expecting any return')
 
-    def costfunc(self, out, ans, _):
+    def costfunc(self, _, inp, ans):
+        out = self.fowardprop(inp, return_out=True)
         return sum(ans * -log(out) - (1 - ans) * log(1 - out))
 
-    def gradient_single(self, out, ans, a):
+    def gradient_single(self, inp, ans):
+        inp = array([inp])
+        a = self.fowardprop(inp, return_a=True)[0]
+        # debug('prev_a', a)
+        # debug('prev_ans', ans)
         lasterror = a[-1] - ans
-        delta = list(chain.from_iterable(a[self.layercount-1][None].T * lasterror[None])) # None == numpy.newaxis
+        # debug('prev_lasterror', lasterror)
+        delta = list(chain.from_iterable(a[self.layercount-1][None].T * lasterror[None]))  # None == numpy.newaxis
         for i in range(self.layercount - 1, 1, -1):  # It is backprop!
-            start, end = self.partialthetalen[i], self.partialthetalen[i+1]
+            start, end = self.partialthetalen[i-1], self.partialthetalen[i]
             thetaseg = self.theta[start: end]
-            thiserror = (dot(thetaseg.reshape(self.layernum[i]+1, self.layernum[i+1]), lasterror)) * (a[i] * (1 - a[i]))
+            # debug('interm', dot(thetaseg.reshape(self.layernum[i-1]+1, self.layernum[i]), lasterror[None]))
+            # debug('interm2', (a[i] * (1 - a[i])))
+            thiserror = dot(thetaseg.reshape(self.layernum[i-1]+1, self.layernum[i]), lasterror[None]) * (a[i] * (1 - a[i]))
             lasterror = thiserror
+            # debug('a', a)
+            # debug('lasterror', lasterror)
+            # debug('delta', delta)
             delta = list(chain.from_iterable(a[i-1][None].T * lasterror[None])) + delta
         return delta
 
-    def gradient(self, out, ans, a):
-        return sum([self.gradient_single(thisout, thisans, a) for thisout, thisans in zip(out, ans)])
+    def gradient(self, _, inp, ans):
+        d = [self.gradient_single(thisinp, thisans) for thisinp, thisans in zip(inp, ans)]
+        debug('debug', d)
+        return sum([self.gradient_single(thisinp, thisans) for thisinp, thisans in zip(inp, ans)]) / len(ans)
 
     def train(self, inp, ans):
-        out, a = self.fowardprop(inp, return_a=True)
-        self.theta = minimize(self.costfunc, self.theta, args=(out, ans, a), jac=self.gradient, method='BFGS').x
+        self.theta = minimize(self.costfunc, self.theta, args=(inp, ans), jac=self.gradient, method='BFGS').x
