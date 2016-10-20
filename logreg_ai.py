@@ -6,7 +6,7 @@ from random import random, randint
 import matplotlib.pyplot as plt
 import warnings
 
-from learningfunc import costfunc, costfunc_d, sigmoid, gen_piece
+from learningfunc import costfunc, costfunc_d, sigmoid
 from ttthelper import isend
 from base_ai import base_ai
 
