@@ -2,6 +2,7 @@ from numpy import array, dot, log, e, ndarray, append, newaxis
 from random import random
 from copy import copy
 from itertools import chain
+from functools import reduce
 from scipy.optimize import minimize
 
 '''
@@ -85,7 +86,8 @@ class ann(object):
                 raise ValueError('length of theta is not what it should be accd. to layernum')
             self.theta = theta
         else:
-            self.theta = array([(random()-0.5)/100 for i in range(self.totalthetalen)])
+            # self.theta = array([(random()-0.5)/100 for i in range(self.totalthetalen)])
+            self.theta = array([0 for i in range(self.totalthetalen)])
 
     def fowardprop(self, allinp, return_a=False, return_out=False):
         if isinstance(allinp, list):
@@ -97,7 +99,7 @@ class ann(object):
         if return_out:
             out = []
         for inp in allinp:
-            temp_a = [None]  # To make final len == layercount
+            temp_a = [inp]
             # debug('inputsize', inp)
             if len(inp) != self.layernum[0]:
                 raise RuntimeError('input size doesn\'t match')
@@ -107,7 +109,10 @@ class ann(object):
                 thetaseg = self.theta[start: end]
                 inp = _fowardprop(thetaseg, inp)
                 if return_a:
-                    temp_a.append(append(array([1]), inp))
+                    if l == self.layercount - 2:
+                        temp_a.append(inp)
+                    else:
+                        temp_a.append(append(array([1]), inp))
             if return_a:
                 a.append(temp_a)
             if return_out:
@@ -122,34 +127,24 @@ class ann(object):
             raise RuntimeError('fowardprop call without expecting any return')
 
     def costfunc(self, _, inp, ans):
-        out = self.fowardprop(inp, return_out=True)
-        return sum(ans * -log(out) - (1 - ans) * log(1 - out))
+        out = array(self.fowardprop(inp, return_out=True))
+        return sum(sum(ans * -log(out).T - (1 - ans) * log(1 - out).T))
 
     def gradient_single(self, inp, ans):
         inp = array([inp])
         a = self.fowardprop(inp, return_a=True)[0]
-        # debug('prev_a', a)
-        # debug('prev_ans', ans)
         lasterror = a[-1] - ans
-        # debug('prev_lasterror', lasterror)
-        delta = list(chain.from_iterable(a[self.layercount-1][None].T * lasterror[None]))  # None == numpy.newaxis
-        for i in range(self.layercount - 1, 1, -1):  # It is backprop!
-            start, end = self.partialthetalen[i-1], self.partialthetalen[i]
-            thetaseg = self.theta[start: end]
-            # debug('interm', dot(thetaseg.reshape(self.layernum[i-1]+1, self.layernum[i]), lasterror[None]))
-            # debug('interm2', (a[i] * (1 - a[i])))
-            thiserror = dot(thetaseg.reshape(self.layernum[i-1]+1, self.layernum[i]), lasterror[None]) * (a[i] * (1 - a[i]))
+        delta = list(chain.from_iterable(a[-2][None].T * lasterror[None]))  # None == numpy.newaxis
+        for i in range(self.layercount - 2, 0, -1):  # It is backprop!
+            start, end = self.partialthetalen[i], self.partialthetalen[i+1]
+            thetaseg = self.theta[start: end].reshape(self.layernum[i]+1, self.layernum[i+1])
+            thiserror = dot(thetaseg, lasterror) * (a[i] * (1 - a[i]))
             lasterror = thiserror
-            # debug('a', a)
-            # debug('lasterror', lasterror)
-            # debug('delta', delta)
             delta = list(chain.from_iterable(a[i-1][None].T * lasterror[None])) + delta
-        return delta
+        return array(delta)
 
     def gradient(self, _, inp, ans):
-        d = [self.gradient_single(thisinp, thisans) for thisinp, thisans in zip(inp, ans)]
-        debug('debug', d)
-        return sum([self.gradient_single(thisinp, thisans) for thisinp, thisans in zip(inp, ans)]) / len(ans)
+        return [i / len(ans) for i in reduce(lambda a, b: a + b, [self.gradient_single(thisinp, thisans) for thisinp, thisans in zip(inp, ans)])]
 
     def train(self, inp, ans):
         self.theta = minimize(self.costfunc, self.theta, args=(inp, ans), jac=self.gradient, method='BFGS').x
