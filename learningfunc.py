@@ -126,6 +126,9 @@ class ann(object):
         else:
             raise RuntimeError('fowardprop call without expecting any return')
 
+    def get(self, inp):
+        return self.fowardprop([inp], return_out=True)[0]
+
     def costfunc(self, _, inp, ans):
         out = array(self.fowardprop(inp, return_out=True))
         return sum(sum(ans * -log(out).T - (1 - ans) * log(1 - out).T))
