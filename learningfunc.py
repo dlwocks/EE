@@ -143,16 +143,17 @@ class ann(object):
     def get(self, inp, a=False):
         return self.fowardprop([inp], return_out=True, return_a=a)
 
-    lastcost = None
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta, return_out=True))
-        costlist = sum(ans * -log(out).T - (1 - ans) * log(1 - out).T)
+        costlist = [-log(tout)[0] if tans == 1 else -log(1 - tout)[0] for tout, tans in zip(out, ans)] # FIXME: -log(tout)**[0]** only works with ann of 1 output; only considered binary ans
+        # costlist = sum(ans * -log(out).T - (1 - ans) * log(1 - out).T)
+        debug('out', out)
+        debug('ans', ans)
+        debug('-log(out).T', -log(out).T)
+        debug('-log(1 - out).T', -log(1 - out).T)
         debug('cost', costlist)
         totalcost = sum(costlist)
         debug('totalcost', totalcost)
-        if self.lastcost and totalcost>self.lastcost:
-            print('COST INCREASED')
-        self.lastcost = totalcost
         return sum(costlist)
 
     def gradient_single(self, theta, inp, ans):
@@ -162,7 +163,7 @@ class ann(object):
         debug('a', a)
         debug('lasterror', lasterror)
         delta = list(chain.from_iterable(a[-2][None].T * lasterror[None]))  # None == numpy.newaxis
-        for i in range(self.layercount - 2, 0, -1):  # It is backprop!
+        for i in range(self.layercount - 2, 0, -1):
             start, end = self.partialthetalen[i], self.partialthetalen[i+1]
             thetaseg = theta[start: end].reshape(self.layernum[i]+1, self.layernum[i+1])
             d = dot(thetaseg[1:], lasterror)
@@ -190,7 +191,7 @@ if __name__ == '__main__':
                      [0, 1],
                      [1, 0],
                      [1, 1]])
-        ans = array([0, 1, 1, 0])
+        ans = array([0, 1, 1, 0])  # FIXME: General implementation should work in ans = array([[0], [1], [1], [0]]), but it is not working
         subdata = array([[0, 0],
                          [1, 1],
                          [1, 0]])
