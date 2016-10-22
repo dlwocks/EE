@@ -1,5 +1,5 @@
-from numpy import array, dot, log, e, ndarray, append, newaxis
-from random import random
+from numpy import array, dot, log, e, ndarray, append, sqrt
+from random import random, uniform
 from copy import copy
 from itertools import chain
 from functools import reduce
@@ -68,6 +68,18 @@ def _fowardprop(theta, data):
     return a
 
 
+def _rndinit(layernum): # totalthetalen is solely for debug purpose
+    inpnum = None
+    inittheta = array([])
+    for outnum in layernum:
+        if inpnum:
+            eps_init = sqrt(6)/sqrt(inpnum+outnum)
+            appendedtheta = array([uniform(-eps_init, eps_init) for i in range((inpnum+1)*outnum)])
+            inittheta = append(inittheta, appendedtheta)
+        inpnum = outnum
+    return inittheta
+
+
 class ann(object):
     def __init__(self, layernum, theta=None):
         if not isinstance(layernum, list):
@@ -86,8 +98,9 @@ class ann(object):
                 raise ValueError('length of theta should be %d, but inputted %d' % (self.partialthetalen[-1], len(theta)))
             self.theta = theta
         else:
-            # self.theta = array([(random()-0.5)/100 for i in range(self.totalthetalen)])
-            self.theta = array([0 for i in range(self.totalthetalen)])
+            self.theta = _rndinit(layernum)
+            # self.theta = array([(random()-0.5) for i in range(self.totalthetalen)])
+            # self.theta = array([0 for i in range(self.totalthetalen)])
 
     def fowardprop(self, allinp, theta=None, return_a=False, return_out=False):
         if theta is None:
@@ -130,20 +143,30 @@ class ann(object):
     def get(self, inp, a=False):
         return self.fowardprop([inp], return_out=True, return_a=a)
 
+    lastcost = None
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta, return_out=True))
-        return sum(sum(ans * -log(out).T - (1 - ans) * log(1 - out).T))
+        costlist = sum(ans * -log(out).T - (1 - ans) * log(1 - out).T)
+        debug('cost', costlist)
+        totalcost = sum(costlist)
+        debug('totalcost', totalcost)
+        if self.lastcost and totalcost>self.lastcost:
+            print('COST INCREASED')
+        self.lastcost = totalcost
+        return sum(costlist)
 
     def gradient_single(self, theta, inp, ans):
         inp = array([inp])
         a = self.fowardprop(inp, theta, return_a=True)[0]
         lasterror = a[-1] - ans
+        debug('a', a)
+        debug('lasterror', lasterror)
         delta = list(chain.from_iterable(a[-2][None].T * lasterror[None]))  # None == numpy.newaxis
         for i in range(self.layercount - 2, 0, -1):  # It is backprop!
             start, end = self.partialthetalen[i], self.partialthetalen[i+1]
             thetaseg = theta[start: end].reshape(self.layernum[i]+1, self.layernum[i+1])
             d = dot(thetaseg[1:], lasterror)
-            agrad = (a[1:][i] * (1 - a[1:][i]))
+            agrad = (a[i][1:] * (1 - a[i][1:]))
             thiserror = d * agrad
             lasterror = thiserror
             delta = list(chain.from_iterable(a[i-1][None].T * lasterror[None])) + delta
@@ -151,6 +174,8 @@ class ann(object):
 
     def gradient(self, theta, inp, ans):
         g = [i / len(ans) for i in reduce(lambda a, b: a + b, [self.gradient_single(theta, thisinp, thisans) for thisinp, thisans in zip(inp, ans)])]
+        debug('theta', theta)
+        debug('gradient', g)
         return array(g)
 
     def train(self, inp, ans):
@@ -166,9 +191,11 @@ if __name__ == '__main__':
                      [1, 0],
                      [1, 1]])
         ans = array([0, 1, 1, 0])
-        subdata = array([[0,0]])
-        subans = array([0])
-        a.train(subdata, subans)
+        subdata = array([[0, 0],
+                         [1, 1],
+                         [1, 0]])
+        subans = array([0, 0, 1])
+        a.train(data, ans)
     except:
         import traceback
         traceback.print_exc()
