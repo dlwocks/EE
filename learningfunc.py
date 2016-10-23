@@ -7,8 +7,11 @@ from scipy.optimize import minimize
 
 '''
 Important definition:
--In an thetaseg, the first n theta represents 11, 12, 13, ..., 1n; that it is for first node in FORMER layer
+-In an thetaseg, the first n theta represents 11, 12, 13, ..., 1n;
+that it is for first node in FORMER layer
 '''
+
+
 def debug(message, param):
     print(message +': ' + str(param))
 
@@ -68,13 +71,14 @@ def _fowardprop(theta, data):
     return a
 
 
-def _rndinit(layernum): # totalthetalen is solely for debug purpose
+def _rndinit(layernum):  # totalthetalen is solely for debug purpose
     inpnum = None
     inittheta = array([])
     for outnum in layernum:
         if inpnum:
             eps_init = sqrt(6)/sqrt(inpnum+outnum)
-            appendedtheta = array([uniform(-eps_init, eps_init) for i in range((inpnum+1)*outnum)])
+            appendedtheta = array([uniform(-eps_init, eps_init)
+                                   for i in range((inpnum+1)*outnum)])
             inittheta = append(inittheta, appendedtheta)
         inpnum = outnum
     return inittheta
@@ -93,13 +97,17 @@ class ann(object):
         self.layercount = len(layernum)
         if theta is not None:
             if not isinstance(theta, ndarray):
-                raise TypeError('param theta, though inputted, is not an array')
+                raise TypeError(
+                    'param theta, though inputted, is not an array')
             if len(theta) != self.partialthetalen[-1]:
-                raise ValueError('length of theta should be %d, but inputted %d' % (self.partialthetalen[-1], len(theta)))
+                raise ValueError(
+                    'length of theta should be %d, but inputted %d' %
+                    (self.partialthetalen[-1], len(theta)))
             self.theta = theta
         else:
             self.theta = _rndinit(layernum)
-            # self.theta = array([(random()-0.5) for i in range(self.totalthetalen)])
+            # self.theta = array([(random()-0.5)
+            #                     for i in range(self.totalthetalen)])
             # self.theta = array([0 for i in range(self.totalthetalen)])
 
     def fowardprop(self, allinp, theta=None, return_a=False, return_out=False):
@@ -114,7 +122,7 @@ class ann(object):
         if return_out:
             out = []
         for inp in allinp:
-            temp_a = [append(array([1]),inp)]
+            temp_a = [append(array([1]), inp)]
             if len(inp) != self.layernum[0]:
                 raise RuntimeError('input size doesn\'t match')
             for l in range(self.layercount - 1):
@@ -145,7 +153,10 @@ class ann(object):
 
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta, return_out=True))
-        costlist = [-log(tout)[0] if tans == 1 else -log(1 - tout)[0] for tout, tans in zip(out, ans)] # FIXME: -log(tout)**[0]** only works with ann of 1 output; only considered binary ans
+        costlist = [-log(tout)[0] if tans == 1 else -log(1 - tout)[0]
+                    for tout, tans in zip(out, ans)]
+        # FIXME: -log(tout)**[0]** only works with ann of 1 output
+        # FIXME: tans: only considered binary ans
         # costlist = sum(ans * -log(out).T - (1 - ans) * log(1 - out).T)
         debug('out', out)
         debug('ans', ans)
@@ -162,10 +173,11 @@ class ann(object):
         lasterror = a[-1] - ans
         debug('a', a)
         debug('lasterror', lasterror)
-        delta = list(chain.from_iterable(a[-2][None].T * lasterror[None]))  # None == numpy.newaxis
+        delta = list(chain.from_iterable(a[-2][None].T * lasterror[None]))
         for i in range(self.layercount - 2, 0, -1):
             start, end = self.partialthetalen[i], self.partialthetalen[i+1]
-            thetaseg = theta[start: end].reshape(self.layernum[i]+1, self.layernum[i+1])
+            thetaseg = theta[start: end].reshape(
+                self.layernum[i]+1, self.layernum[i+1])
             d = dot(thetaseg[1:], lasterror)
             agrad = (a[i][1:] * (1 - a[i][1:]))
             thiserror = d * agrad
@@ -180,7 +192,11 @@ class ann(object):
         return array(g)
 
     def train(self, inp, ans):
-        minres = minimize(self.costfunc, self.theta, args=(inp, ans), jac=self.gradient, method='BFGS')
+        minres = minimize(self.costfunc,
+                          self.theta,
+                          args=(inp, ans),
+                          jac=self.gradient,
+                          method='BFGS')
         self.theta = minres.x
         print(minres)
 
@@ -196,7 +212,6 @@ if __name__ == '__main__':
                          [1, 1],
                          [1, 0]])
         subans = array([0, 0, 1])
-        a.train(data, ans)
     except:
         import traceback
         traceback.print_exc()
