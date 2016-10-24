@@ -13,7 +13,7 @@ that it is for first node in FORMER layer
 
 
 def debug(message, param):
-    ALLOWED_MSG_LIST = ['out', 'gradient', 'gradient_single']
+    ALLOWED_MSG_LIST = ['out']
     if message in ALLOWED_MSG_LIST:
         print(message + ': ' + str(param))
 
@@ -86,13 +86,25 @@ def _rndinit(layernum):  # totalthetalen is solely for debug purpose
     return inittheta
 
 
+def _regseg(theta, layernum, partialthetalen):
+    ret = array([])
+    temp = None
+    for l, p in zip(layernum, partialthetalen):
+        if temp is not None:
+            bias = array([0 for i in range(l)])
+            thetaseg = append(bias, theta[temp+l:p])
+            ret = append(ret, thetaseg)
+        temp = p
+    return ret
+
+
 class ann(object):
-    def __init__(self, layernum, theta=None):
+    def __init__(self, layernum, theta=None, reg=0.001):
         if not isinstance(layernum, list):
             raise TypeError('param layernum is not list')
         if len(layernum) < 2:
-            raise ValueError('param layernum is too small.'
-                             'It should at least consist input/output layer')
+            raise ValueError('param layernum is too short.'
+                             'The network should at least consist input/output layer')
         self.partialthetalen = _thetalen(layernum)
         self.totalthetalen = self.partialthetalen[-1]
         self.layernum = layernum
@@ -111,6 +123,7 @@ class ann(object):
             # self.theta = array([(random()-0.5)
             #                     for i in range(self.totalthetalen)])
             # self.theta = array([0 for i in range(self.totalthetalen)])
+        self.reg = reg
 
     def fowardprop(self, allinp, theta=None, return_a=False, return_out=False):
         if theta is None:
@@ -165,9 +178,14 @@ class ann(object):
         debug('-log(out).T', -log(out).T)
         debug('-log(1 - out).T', -log(1 - out).T)
         debug('cost', costlist)
-        totalcost = sum(costlist)
+        totalcost = sum(costlist) / len(ans)
+        regtheta = _regseg(theta, self.layernum, self.partialthetalen)
+        debug('theta', theta)
+        debug('regtheta', regtheta)
+        regcost = sum([i**2 for i in regtheta]) / len(regtheta) / 2 * self.reg  # XXX: len(regtheta) or len(ans)?
         debug('totalcost', totalcost)
-        return sum(costlist)
+        debug('regcost', regcost)
+        return totalcost + regcost
 
     def gradient_single(self, theta, inp, ans):
         inp = array([inp])
@@ -197,8 +215,11 @@ class ann(object):
             grad = self.gradient_single(theta, thisinp, thisans) / len(ans)
             theta = theta + grad
         g = theta - init_theta
+        regtheta = _regseg(theta, self.layernum, self.partialthetalen)
+        reggrad = regtheta / len(regtheta) * self.reg
+        debug('reggrad', reggrad)
         debug('gradient', g)
-        return array(g)
+        return g + reggrad
 
     def train(self, inp, ans):
         minres = minimize(self.costfunc,
