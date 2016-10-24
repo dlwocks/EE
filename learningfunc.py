@@ -13,7 +13,9 @@ that it is for first node in FORMER layer
 
 
 def debug(message, param):
-    print(message +': ' + str(param))
+    ALLOWED_MSG_LIST = ['out', 'gradient', 'gradient_single']
+    if message in ALLOWED_MSG_LIST:
+        print(message + ': ' + str(param))
 
 
 def sigmoid(z):
@@ -183,6 +185,7 @@ class ann(object):
             thiserror = d * agrad
             lasterror = thiserror
             delta = list(chain.from_iterable(a[i-1][None].T * lasterror[None])) + delta
+        debug('gradient_single', delta)
         return array(delta)
 
     def gradient(self, theta, inp, ans):
@@ -212,6 +215,7 @@ if __name__ == '__main__':
                          [1, 1],
                          [1, 0]])
         subans = array([0, 0, 1])
+        a.train(data, ans)
     except:
         import traceback
         traceback.print_exc()
