@@ -189,8 +189,14 @@ class ann(object):
         return array(delta)
 
     def gradient(self, theta, inp, ans):
-        g = [i / len(ans) for i in reduce(lambda a, b: a + b, [self.gradient_single(theta, thisinp, thisans) for thisinp, thisans in zip(inp, ans)])]
-        debug('theta', theta)
+        #  Parallel Delta Version:
+        #  g = [i / len(ans) for i in reduce(lambda a, b: a + b, [self.gradient_single(theta, thisinp, thisans) for thisinp, thisans in zip(inp, ans)])]
+        #  Series Delta Version:
+        init_theta = copy(theta)
+        for thisinp, thisans in zip(inp, ans):
+            grad = self.gradient_single(theta, thisinp, thisans) / len(ans)
+            theta = theta + grad
+        g = theta - init_theta
         debug('gradient', g)
         return array(g)
 
