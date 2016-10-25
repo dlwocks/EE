@@ -1,7 +1,7 @@
 from numpy import array, dot, log, e, ndarray, append, sqrt
 from random import random, uniform
 from copy import copy
-from itertools import chain
+from itertools import chain, count
 from functools import reduce
 from scipy.optimize import minimize
 
@@ -13,7 +13,7 @@ that it is for first node in FORMER layer
 
 
 def debug(message, param, always=False):
-    ALLOWED_MSG_LIST = ['out', 'gradient', 'gradient_single']
+    ALLOWED_MSG_LIST = []
     if message in ALLOWED_MSG_LIST or always:
         print(message + ': ' + str(param))
 
@@ -73,7 +73,7 @@ def _fowardprop(theta, data):
     return a
 
 
-def _rndinit(layernum):  # totalthetalen is solely for debug purpose
+def _rndinit(layernum):
     inpnum = None
     inittheta = array([])
     for outnum in layernum:
@@ -159,11 +159,12 @@ class ann(object):
                     for tout, tans in zip(out, ans)]
         # FIXME: -log(tout)**[0]** only works with ann of 1 output
         # FIXME: tans: only considered binary ans
-        # costlist = sum(ans * -log(out).T - (1 - ans) * log(1 - out).T)
+        # costlist = sum(ans * -log(out) - (- ans + 1) * log(1 - out))
+        debug('costlist', costlist)
         debug('out', out)
         debug('ans', ans)
-        debug('-log(out).T', -log(out).T)
-        debug('-log(1 - out).T', -log(1 - out).T)
+        # debug('-log(out).T', -log(out).T)
+        # debug('-log(1 - out).T', -log(1 - out).T)
         debug('cost', costlist)
         totalcost = sum(costlist)
         debug('totalcost', totalcost)
@@ -207,11 +208,12 @@ class ann(object):
                           jac=self.gradient,
                           method='BFGS')
         self.theta = minres.x
-        print(minres)
+        debug('minres', minres)
+        return minres
+
 
 if __name__ == '__main__':
     try:
-        a = ann([2, 2, 1])
         data = array([[0, 0],
                      [0, 1],
                      [1, 0],
@@ -221,7 +223,19 @@ if __name__ == '__main__':
                          [1, 1],
                          [1, 0]])
         subans = array([0, 0, 1])
-        a.train(data, ans)
+        minval = 100000
+        minx = None
+        for i in count():
+            a = ann([2, 2, 1])
+            minres = a.train(data, ans)
+            if minres.fun < minval:
+                print('Minimum value found: %f' % (minres.fun))
+                minval = minres.fun
+                minx = minres.x
+            if i % 10 == 0 and i != 0:
+                print('%d try done..' % (i))
+    except KeyboardInterrupt:
+        print('Search interrupted with %d try(s) and minimum value of %f found.' % (i, minval))
     except:
         import traceback
         traceback.print_exc()
