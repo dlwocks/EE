@@ -12,9 +12,9 @@ that it is for first node in FORMER layer
 '''
 
 
-def debug(message, param):
+def debug(message, param, always=False):
     ALLOWED_MSG_LIST = ['out', 'gradient', 'gradient_single']
-    if message in ALLOWED_MSG_LIST:
+    if message in ALLOWED_MSG_LIST or always:
         print(message + ': ' + str(param))
 
 
