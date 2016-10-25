@@ -212,6 +212,20 @@ class ann(object):
         return minres
 
 
+def loaddata(setname):
+    SUPPORTED_DATASET = ['and', 'or', 'xor']
+    if setname not in SUPPORTED_DATASET:
+        raise ValueError('setname is not supported')
+    if setname in ['and', 'or', 'xor']:
+        data = array([[0, 0], [0, 1], [1, 0], [1, 1]])
+    if setname == 'and':
+        ans = array([[0], [0], [0], [1]])
+    elif setname == 'or':
+        ans = array([[0], [1], [1], [1]])
+    elif setname == 'xor':
+        ans = array([[0], [1], [1], [0]])
+    return data, ans
+
 if __name__ == '__main__':
     try:
         data = array([[0, 0],
