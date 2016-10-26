@@ -14,7 +14,7 @@ that it is for first node in FORMER layer
 
 
 def debug(message, param, always=False):
-    ALLOWED_MSG_LIST = ['minres']
+    ALLOWED_MSG_LIST = []
     if message in ALLOWED_MSG_LIST or always:
         print(message + ': ' + str(param))
 
@@ -216,10 +216,10 @@ class ann(object):
 
 
 def loaddata(setname):
-    SUPPORTED_DATASET = ['and', 'or', 'xor']
+    SUPPORTED_DATASET = ['and', 'or', 'xor', 'nand', 'nor', 'xnor']
     if setname not in SUPPORTED_DATASET:
         raise ValueError('setname is not supported')
-    if setname in ['and', 'or', 'xor']:
+    if setname in ['and', 'or', 'xor', 'nand', 'nor', 'xnor']:
         data = array([[0, 0], [0, 1], [1, 0], [1, 1]])
     if setname == 'and':
         ans = array([[0], [0], [0], [1]])
@@ -227,6 +227,12 @@ def loaddata(setname):
         ans = array([[0], [1], [1], [1]])
     elif setname == 'xor':
         ans = array([[0], [1], [1], [0]])
+    elif setname == 'nand':
+        ans = array([[1], [1], [1], [0]])
+    elif setname == 'nor':
+        ans = array([[1], [0], [0], [0]])
+    elif setname == 'xnor':
+        ans = array([[1], [0], [0], [1]])
     return data, ans
 
 
@@ -243,7 +249,6 @@ if __name__ == '__main__':
     try:
         ANN_DIMENSION = [2, 2, 1]
         data, ans = loaddata('xor')
-        # FIXME: General implementation should work in ans = array([[0], [1], [1], [0]]), but it may have some problem
         if search:
             minval = 100000
             minx = None
@@ -259,6 +264,9 @@ if __name__ == '__main__':
                         print('%d try done..' % (i))
             except KeyboardInterrupt:
                 print('Search interrupted with %d try(s) and minimum value of %f found.' % (i, minval))
+                if minx is not None:
+                    a.theta = minx
+                    print('Best theta value is plugged into object a.')
         else:
             print('Module and data loaded.')
     except:
