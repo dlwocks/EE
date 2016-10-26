@@ -190,18 +190,23 @@ class ann(object):
         return array(delta)
 
     def gradient(self, theta, inp, ans):
-        #  Parallel Delta Version:
-        #  g = [i / len(ans) for i in reduce(lambda a, b: a + b, [self.gradient_single(theta, thisinp, thisans) for thisinp, thisans in zip(inp, ans)])]
-        #  Series Delta Version:
-        init_theta = copy(theta)
-        for thisinp, thisans in zip(inp, ans):
-            grad = self.gradient_single(theta, thisinp, thisans) / len(ans)
-            theta = theta + grad
-        g = theta - init_theta
+        PARALLEL = False
+        if PARALLEL:
+            g = [i / len(ans) for i in reduce(lambda a, b: a + b, [self.gradient_single(theta, thisinp, thisans) for thisinp, thisans in zip(inp, ans)])]
+        else:  # Series Delta
+            init_theta = copy(theta)
+            for thisinp, thisans in zip(inp, ans):
+                grad = self.gradient_single(theta, thisinp, thisans) / len(ans)
+                theta = theta + grad
+            g = theta - init_theta
         debug('gradient', g)
         return array(g)
 
     def train(self, inp, ans):
+        if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
+            raise TypeError
+        if not (len(inp.shape) == 2 and len(ans.shape) == 2 and len(inp) == len(ans) and len(inp[0]) == self.layernum[0] and len(ans[0] == self.layernum[-1])):
+            raise ValueError
         minres = minimize(self.costfunc,
                           self.theta,
                           args=(inp, ans),
@@ -238,21 +243,15 @@ def handle_args():
 if __name__ == '__main__':
     search = handle_args()
     try:
-        data = array([[0, 0],
-                     [0, 1],
-                     [1, 0],
-                     [1, 1]])
-        ans = array([0, 1, 1, 0])  # FIXME: General implementation should work in ans = array([[0], [1], [1], [0]]), but it is not working
-        subdata = array([[0, 0],
-                         [1, 1],
-                         [1, 0]])
-        subans = array([0, 0, 1])
+        ANN_DIMENSION = [2, 2, 1]
+        data, ans = loaddata('xor')
+        # FIXME: General implementation should work in ans = array([[0], [1], [1], [0]]), but it may have some problem
         if search:
             minval = 100000
             minx = None
             try:
                 for i in count():
-                    a = ann([2, 2, 1])
+                    a = ann(ANN_DIMENSION)
                     minres = a.train(data, ans)
                     if minres.fun < minval:
                         print('Minimum value found on %dth attempt: %f' % (i + 1, minres.fun))
