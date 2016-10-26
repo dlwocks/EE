@@ -14,7 +14,7 @@ that it is for first node in FORMER layer
 
 
 def debug(message, param, always=False):
-    ALLOWED_MSG_LIST = []
+    ALLOWED_MSG_LIST = ['minres']
     if message in ALLOWED_MSG_LIST or always:
         print(message + ': ' + str(param))
 
@@ -168,26 +168,14 @@ class ann(object):
 
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta, return_out=True))
-        # costlist = [-log(tout)[0] if tans == 1 else -log(1 - tout)[0]
-        #             for tout, tans in zip(out, ans)]
-        # FIXME: -log(tout)**[0]** only works with ann of 1 output
-        # FIXME: tans: only considered binary ans
-        # costlist = sum(ans * -log(out) - (1 - ans) * log(1 - out))
         costlist = [self.costfunc_single(theta, thisout, thisans) for thisout, thisans in zip(out, ans)]
-        debug('costlist', costlist)
-        debug('out', out)
-        debug('ans', ans)
-        debug('cost', costlist)
         totalcost = sum(costlist)
-        debug('totalcost', totalcost)
         return totalcost
 
     def gradient_single(self, theta, inp, ans):
         inp = array([inp])
         a = self.fowardprop(inp, theta, return_a=True)[0]
         lasterror = a[-1] - ans
-        debug('a', a)
-        debug('lasterror', lasterror)
         delta = list(chain.from_iterable(a[-2][None].T * lasterror[None]))
         for i in range(self.layercount - 2, 0, -1):
             start, end = self.partialthetalen[i], self.partialthetalen[i+1]
@@ -198,7 +186,6 @@ class ann(object):
             thiserror = d * agrad
             lasterror = thiserror
             delta = list(chain.from_iterable(a[i-1][None].T * lasterror[None])) + delta
-        debug('gradient_single', delta)
         return array(delta)
 
     def gradient(self, theta, inp, ans):
@@ -211,7 +198,6 @@ class ann(object):
                 grad = self.gradient_single(theta, thisinp, thisans) / len(ans)
                 theta = theta + grad
             g = theta - init_theta
-        debug('gradient', g)
         return array(g)
 
     def train(self, inp, ans):
