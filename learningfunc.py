@@ -226,7 +226,17 @@ def loaddata(setname):
         ans = array([[0], [1], [1], [0]])
     return data, ans
 
+
+def handle_args():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--search', action='store_true', help='Do repetitive search')
+    args = parser.parse_args()
+    return args.search
+
+
 if __name__ == '__main__':
+    search = handle_args()
     try:
         data = array([[0, 0],
                      [0, 1],
@@ -237,19 +247,23 @@ if __name__ == '__main__':
                          [1, 1],
                          [1, 0]])
         subans = array([0, 0, 1])
-        minval = 100000
-        minx = None
-        for i in count():
-            a = ann([2, 2, 1])
-            minres = a.train(data, ans)
-            if minres.fun < minval:
-                print('Minimum value found: %f' % (minres.fun))
-                minval = minres.fun
-                minx = minres.x
-            if i % 10 == 0 and i != 0:
-                print('%d try done..' % (i))
-    except KeyboardInterrupt:
-        print('Search interrupted with %d try(s) and minimum value of %f found.' % (i, minval))
+        if search:
+            minval = 100000
+            minx = None
+            try:
+                for i in count():
+                    a = ann([2, 2, 1])
+                    minres = a.train(data, ans)
+                    if minres.fun < minval:
+                        print('Minimum value found on %dth attempt: %f' % (i + 1, minres.fun))
+                        minval = minres.fun
+                        minx = minres.x
+                    if i % 10 == 0 and i != 0:
+                        print('%d try done..' % (i))
+            except KeyboardInterrupt:
+                print('Search interrupted with %d try(s) and minimum value of %f found.' % (i, minval))
+        else:
+            print('Module and data loaded.')
     except:
         import traceback
         traceback.print_exc()
