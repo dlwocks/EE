@@ -4,6 +4,7 @@ from copy import copy
 from itertools import chain, count
 from functools import reduce
 from scipy.optimize import minimize
+import warnings
 
 '''
 Important definition:
@@ -19,7 +20,10 @@ def debug(message, param, always=False):
 
 
 def sigmoid(z):
-    return 1/(1+e**(-z))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        ret = 1/(1+e**(-z))
+    return ret
 
 
 def costfunc(theta, data, ans):
@@ -140,6 +144,12 @@ class ann(object):
             if return_a:
                 a.append(temp_a)
             if return_out:
+                # HACK: Avoid overflow in log
+                for i, o in enumerate(inp):
+                    if o == 1:
+                        inp[i] = 1 - 1e-10
+                    elif o == 0:
+                        inp[i] = 1e-10
                 out.append(inp)
         if return_a and return_out:
             return out, a
@@ -153,22 +163,24 @@ class ann(object):
     def get(self, inp, a=False):
         return self.fowardprop([inp], return_out=True, return_a=a)
 
+    def costfunc_single(self, theta, out, ans):
+        return sum(ans * -log(out) - (1 - ans) * log(1 - out))
+
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta, return_out=True))
-        costlist = [-log(tout)[0] if tans == 1 else -log(1 - tout)[0]
-                    for tout, tans in zip(out, ans)]
+        # costlist = [-log(tout)[0] if tans == 1 else -log(1 - tout)[0]
+        #             for tout, tans in zip(out, ans)]
         # FIXME: -log(tout)**[0]** only works with ann of 1 output
         # FIXME: tans: only considered binary ans
-        # costlist = sum(ans * -log(out) - (- ans + 1) * log(1 - out))
+        # costlist = sum(ans * -log(out) - (1 - ans) * log(1 - out))
+        costlist = [self.costfunc_single(theta, thisout, thisans) for thisout, thisans in zip(out, ans)]
         debug('costlist', costlist)
         debug('out', out)
         debug('ans', ans)
-        # debug('-log(out).T', -log(out).T)
-        # debug('-log(1 - out).T', -log(1 - out).T)
         debug('cost', costlist)
         totalcost = sum(costlist)
         debug('totalcost', totalcost)
-        return sum(costlist)
+        return totalcost
 
     def gradient_single(self, theta, inp, ans):
         inp = array([inp])
