@@ -33,8 +33,11 @@ class ann_ai(base_ai):
         else:
             raise NotImplementedError
 
-    def train(self, pt=True):
-        data, ans = rndgen(game=100)
+    def train(self, dataset=None, pt=True):
+        if dataset is None:
+            data, ans = rndgen(game=100)
+        else:
+            data, ans = dataset
         data = array([i for i in chain.from_iterable([self.featureize_in_piece(d) for d in data])])
         ans = array([array([a]) for a in ans])
         if self.USE_VAL and self.USE_POL:

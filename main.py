@@ -1,8 +1,9 @@
 import logreg_ai
 import ttttester
 import ann_ai
+import ttthelper
 from statistics import mean, stdev, variance
-
+from itertools import count
 '''
 Datas:
 Feature     Mean    StdDev
@@ -17,14 +18,20 @@ if __name__ == '__main__':
     TRY = 10
     scorerec = []
     try:
-        for i in range(TRY):
+        dataset = ttthelper.rndgen(game=100)
+        mscore, mtheta = 0, None
+        for i in count():
             if i != 0:
                 print('%d ais checked..' % i)
             # ai = logreg_ai.logreg_ai(feature=['board'])
             ai = ann_ai.ann_ai()
-            ai.train(pt=False)
+            ai.train(dataset=dataset, pt=False)
             score = ttttester.complete_check(ai.getstep, pt=False)
             scorerec.append(score)
+            if score > mscore:
+                print('Maximum value found on %dth attempt: %f' % (i + 1, score))
+                mscore = score
+                mtheta = ai.val_ann.theta
         print('Finished check.\nAverage AEP for this ai is: %f\nStandard deviation for AEP is:%f' % (mean(scorerec), stdev(scorerec)))
     except KeyboardInterrupt:
         print('Check interrupted with %d try.\nAverage AEP for this ai is: %f\nStandard deviation for AEP is:%f' % (i, mean(scorerec), stdev(scorerec)))
