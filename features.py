@@ -44,4 +44,3 @@ def ctsur(board):  # with board: 1.06
             elif board[p] % 2 == 1:
                 ret[i+9] += 1
     return ret
-

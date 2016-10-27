@@ -1,5 +1,6 @@
 import logreg_ai
 import ttttester
+import ann_ai
 from statistics import mean, stdev, variance
 
 '''
@@ -17,13 +18,18 @@ if __name__ == '__main__':
     scorerec = []
     try:
         for i in range(TRY):
-            if i % min(10, TRY//10) == 0 and i:
+            if i != 0:
                 print('%d ais checked..' % i)
-            ai = logreg_ai.logreg_ai(feature=['board'])
-            # ai = ann_ai.ann_ai(layernum=[9, 18, 9])
-            ai.startlearn(game=100, opponent='random', pt=False, graph=False)
+            # ai = logreg_ai.logreg_ai(feature=['board'])
+            ai = ann_ai.ann_ai()
+            ai.train(pt=False)
             score = ttttester.complete_check(ai.getstep, pt=False)
             scorerec.append(score)
         print('Finished check.\nAverage AEP for this ai is: %f\nStandard deviation for AEP is:%f' % (mean(scorerec), stdev(scorerec)))
     except KeyboardInterrupt:
         print('Check interrupted with %d try.\nAverage AEP for this ai is: %f\nStandard deviation for AEP is:%f' % (i, mean(scorerec), stdev(scorerec)))
+    except:
+        import traceback
+        traceback.print_exc()
+    finally:
+        __import__('code').interact(local=locals())

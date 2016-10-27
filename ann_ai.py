@@ -8,7 +8,7 @@ from base_ai import base_ai
 
 class ann_ai(base_ai):
     def __init__(self):
-        self.val_ann = ann([9, 18, 27,18, 1])
+        self.val_ann = ann([9, 18, 1])
         self.USE_VAL = True
         self.USE_POL = False
         self.feature = ['board']
@@ -34,7 +34,7 @@ class ann_ai(base_ai):
             raise NotImplementedError
 
     def train(self, pt=True):
-        data, ans = rndgen(game=500)
+        data, ans = rndgen(game=100)
         data = array([i for i in chain.from_iterable([self.featureize_in_piece(d) for d in data])])
         ans = array([array([a]) for a in ans])
         if self.USE_VAL and self.USE_POL:
@@ -50,6 +50,7 @@ class ann_ai(base_ai):
 
 if __name__ == '__main__':
     a = ann_ai()
+    inittheta = a.val_ann.theta
     a.train()
     input('Input to continue..')
     import ttttester
