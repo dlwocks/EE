@@ -7,8 +7,11 @@ from base_ai import base_ai
 
 
 class ann_ai(base_ai):
-    def __init__(self):
-        self.val_ann = ann([9, 18, 1])
+    def __init__(self, val_layernum=None):
+        if val_layernum is None:
+            self.val_ann = ann([9, 9, 1])
+        else:
+            self.val_ann = ann(val_layernum)
         self.USE_VAL = True
         self.USE_POL = False
         self.feature = ['board']
