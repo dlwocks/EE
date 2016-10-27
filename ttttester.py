@@ -36,13 +36,6 @@ def emptyspace(board, step):
                 board[i][j] = 0
 
 
-def randomstep(board, _, __):
-    while True:
-        i, j = randint(0, 2), randint(0, 2)
-        if board[i][j] == 0:
-            return i, j
-
-
 def _complete_check(algorithm, board=None, step=1, ainum=2):
     if board is None:
         board = [[0 for i in range(3)]for j in range(3)]

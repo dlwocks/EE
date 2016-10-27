@@ -1,4 +1,5 @@
 from itertools import product
+from random import randint
 
 
 def _row_gen(board):
@@ -56,3 +57,39 @@ def isend(board, nx=None):
                 if board[i][j] == 0:
                     return 0
         return 0.5
+
+
+def emptyspace_pos(board, step):
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == 0:
+                board[i][j] = step
+                yield board, i, j
+                board[i][j] = 0
+
+
+def randomstep(board):
+    while True:
+        i, j = randint(0, 2), randint(0, 2)
+        if board[i][j] == 0:
+            return i, j
+
+
+def rndgen(game):
+    data, ans = [], []
+    for i in range(game):
+        board = [[0 for i in range(3)]for i in range(3)]
+        ainum = randint(1, 2)
+        end = 0
+        step = 1
+        while not end and step < 10:
+            i, j = randomstep(board)
+            board[i][j] = step
+            if 9 >= step >= 5:
+                end = isend(board, step+1)
+                if end:
+                    break
+            step += 1
+        data.append(board)
+        ans.extend([end if end <= 1 else 0 for _ in range(step)])
+    return data, ans

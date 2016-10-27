@@ -130,7 +130,7 @@ class ann(object):
         for inp in allinp:
             temp_a = [append(array([1]), inp)]
             if len(inp) != self.layernum[0]:
-                raise RuntimeError('input size doesn\'t match')
+                raise RuntimeError('input size doesn\'t match. length of input is %d, while it should be %d' % (len(inp), self.layernum[0]))
             for l in range(self.layercount - 1):
                 inp = append(array([1]), inp)  # Add bias unit
                 start, end = self.partialthetalen[l], self.partialthetalen[l+1]
@@ -161,10 +161,12 @@ class ann(object):
             raise RuntimeError('fowardprop call without expecting any return')
 
     def get(self, inp, a=False):
-        return self.fowardprop([inp], return_out=True, return_a=a)
+        return self.fowardprop(array([inp]), return_out=True, return_a=a)[0]  # [0]: first inp's output(while there's only one)
 
     def costfunc_single(self, theta, out, ans):
-        return sum(ans * -log(out) - (1 - ans) * log(1 - out))
+        c = sum(ans * -log(out) - (1 - ans) * log(1 - out))
+        assert c >= 0, (out, ans)
+        return c
 
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta, return_out=True))
@@ -204,7 +206,7 @@ class ann(object):
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
             raise TypeError
         if not (len(inp.shape) == 2 and len(ans.shape) == 2 and len(inp) == len(ans) and len(inp[0]) == self.layernum[0] and len(ans[0] == self.layernum[-1])):
-            raise ValueError
+            raise ValueError((len(inp.shape) == 2, len(ans.shape) == 2, len(inp) == len(ans), len(inp[0]) == self.layernum[0]))
         minres = minimize(self.costfunc,
                           self.theta,
                           args=(inp, ans),
@@ -248,7 +250,7 @@ if __name__ == '__main__':
     search = handle_args()
     try:
         ANN_DIMENSION = [2, 2, 1]
-        data, ans = loaddata('xor')
+        data, ans = loaddata('xnor')
         if search:
             minval = 100000
             minx = None

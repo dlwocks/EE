@@ -7,76 +7,20 @@ import matplotlib.pyplot as plt
 import warnings
 
 from learningfunc import costfunc, costfunc_d, sigmoid
-from ttthelper import isend
+from ttthelper import isend, emptyspace_pos
 from base_ai import base_ai
-
-
-def _board(board):
-    return [0 if not i else 1 if i % 2 else -1 for i in board]
-
-
-def _absboard(board):
-    return [0 if not i else 1 for i in board]
-
-
-def _nboard(board):
-    m = max(board)
-    return [0 if not i or i % 2 == m % 2 else 1 if i % 2 else -1 for i in board]
-
-
-def _lboard(board):
-    m = max(board)
-    return [0 if not i or i % 2 != m % 2 else 1 if i % 2 else -1 for i in board]
-
-
-def _oboard(board):
-    return [0 if not i else i if i % 2 else -i for i in board]
-
-
-def _orboard(board):
-    m = max(board)
-    return [0 if not i else (m - i + 1) if i % 2 else -(m - i + 1) for i in board]
-
-ctsur_map = {0: [1, 3, 4],
-             1: [0, 2, 3, 4, 5],
-             2: [1, 4, 5],
-             3: [0, 1, 4, 6, 7],
-             4: [0, 1, 2, 3, 5, 6, 7, 8],
-             5: [1, 2, 4, 7, 8],
-             6: [3, 4, 7],
-             7: [3, 4, 5, 6, 8],
-             8: [4, 5, 7]}
-
-
-def _ctsur(board):  # with board: 1.06
-    ret = [0 for i in range(18)]
-    for i in range(9):
-        for p in ctsur_map[i]:
-            if board[p] != 0 and board[p] % 2 == 0:
-                ret[i] += 1
-            elif board[p] % 2 == 1:
-                ret[i+9] += 1
-    return ret
-
-
-def _emptyspace_pos(board, step):
-    for i in range(3):
-        for j in range(3):
-            if board[i][j] == 0:
-                board[i][j] = step
-                yield board, i, j
-                board[i][j] = 0
+import features as ft
 
 
 class logreg_ai(base_ai):
     feature_num = 9
-    FEATURE_FUNC_MAP = {'board': _board,
-                        'abs': _absboard,
-                        'nboard': _nboard,
-                        'lboard': _lboard,
-                        'oboard': _oboard,
-                        'orboard': _orboard,
-                        'ctsur': _ctsur}
+    FEATURE_FUNC_MAP = {'board': ft.board,
+                        'abs': ft.absboard,
+                        'nboard': ft.nboard,
+                        'lboard': ft.lboard,
+                        'oboard': ft.oboard,
+                        'orboard': ft.orboard,
+                        'ctsur': ft.ctsur}
     FEATURE_NUM_MAP = {'board': 9,
                        'abs': 9,
                        'nboard': 9,
@@ -116,8 +60,8 @@ class logreg_ai(base_ai):
 
     def getstep(self, board, ainum, step):
         mi, mj, mdot = 0, 0, -10000 if ainum % 2 else 10000
-        for nextboard, i, j in _emptyspace_pos(board, step):
-            nextboard = array(self.featureize_final(nextboard))
+        for nextboard, i, j in emptyspace_pos(board, step):
+            nextboard = self.featureize_final(nextboard)
             dotval = dot(nextboard, self.theta_value)
             if ainum % 2 == 1 and dotval > mdot:
                 mi, mj, mdot = i, j, dotval
