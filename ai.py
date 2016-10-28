@@ -39,7 +39,7 @@ def _two_in_a_row(board, ainum, r):
                     return k
                 else:
                     temp = k
-    # print(repr(temp))
+    log.info(repr(temp))
     return temp
 
 
@@ -51,7 +51,7 @@ def _fork(board, ainum, turn, r):
                 tempboard[i[0]][i[1]] += 1
                 tempboard[j[0]][j[1]] += 1
                 continue
-    return [pos for pos in product(range(3), range(3)) if tempboard[pos[0]][pos[1]] >=2]
+    return [pos for pos in product(range(3), range(3)) if tempboard[pos[0]][pos[1]] >= 2]
 
 
 def _fork_opponent(board, ainum, turn, r):
@@ -87,17 +87,17 @@ def algorithm_wiki(board, ainum, turn, rndfrombest=False):
     '''
     pos = _two_in_a_row(board, ainum, rndfrombest)
     if pos:
-        print('returned in _two_in_a_row')
+        log.info('returned in _two_in_a_row')
         return pos
     pos = _fork(board, ainum, turn, rndfrombest)
     if pos:
-        print('returned in own fork')
+        log.info('returned in own fork')
         return pos[0]
     pos = _fork_opponent(board, ainum, turn, rndfrombest)
     if pos:
-        print('returned in opponent fork')
+        log.info('returned in opponent fork')
         return pos
-    print('returned after tiar and fork')
+    log.info('returned after tiar and fork')
     if board[1][1] == 0:
         return 1, 1
     '''
@@ -122,17 +122,3 @@ def algorithm_wiki(board, ainum, turn, rndfrombest=False):
         if board[i][j] == 0:
             return i, j
     assert False
-
-
-if __name__ == '__main__':
-    from ttttester import complete_check
-    from ttthelper import gamegen
-    from itertools import count
-    for i in count():
-        dataset = gamegen(1, algorithm_wiki, (True,))
-        if dataset[1][0] != 0.5:
-            print(i)
-            print(dataset)
-            break
-    bd = [[0, 0, 0], [0, 1, 0], [0, 0, 2]]
-    __import__('code').interact(local=locals())

@@ -79,11 +79,10 @@ def gamegen(gamenum, alg=randomstep, args=()):
     data, ans = [], []
     for i in range(gamenum):
         board = [[0 for i in range(3)]for i in range(3)]
-        ainum = randint(1, 2)
         end = 0
         step = 1
         while not end and step < 10:
-            i, j = alg(board, ainum, step, *args)
+            i, j = alg(board, (step+1) % 2 + 1, step, *args)
             board[i][j] = step
             if 9 >= step >= 5:
                 end = isend(board, step+1)
