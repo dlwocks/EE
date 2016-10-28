@@ -68,22 +68,22 @@ def emptyspace_pos(board, step):
                 board[i][j] = 0
 
 
-def randomstep(board):
+def randomstep(board, _, __):
     while True:
         i, j = randint(0, 2), randint(0, 2)
         if board[i][j] == 0:
             return i, j
 
 
-def rndgen(game):
+def gamegen(gamenum, alg=randomstep, args=()):
     data, ans = [], []
-    for i in range(game):
+    for i in range(gamenum):
         board = [[0 for i in range(3)]for i in range(3)]
         ainum = randint(1, 2)
         end = 0
         step = 1
         while not end and step < 10:
-            i, j = randomstep(board)
+            i, j = alg(board, ainum, step, *args)
             board[i][j] = step
             if 9 >= step >= 5:
                 end = isend(board, step+1)
