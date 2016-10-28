@@ -1,4 +1,4 @@
-from numpy import array, dot, log, e, ndarray, append, sqrt, exp
+from numpy import array, dot, log, e, ndarray, append, sqrt, exp, reciprocal, add
 from random import random, uniform
 from copy import copy
 from itertools import chain, count
@@ -22,7 +22,7 @@ def debug(message, param, always=False):
 def sigmoid(z):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        ret = 1/(1+exp(-z))
+        ret = reciprocal(add(exp(-z), 1))
     return ret
 
 
@@ -165,7 +165,6 @@ class ann(object):
 
     def costfunc_single(self, theta, out, ans):
         c = sum(ans * -log(out) - (1 - ans) * log(1 - out))
-        assert c >= 0, (out, ans)
         return c
 
     def costfunc(self, theta, inp, ans):
