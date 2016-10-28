@@ -1,7 +1,7 @@
 from numpy import array
 from itertools import chain
 
-from ttthelper import emptyspace_pos, rndgen
+from ttthelper import emptyspace_pos, gamegen
 from learningfunc import ann
 from base_ai import base_ai
 
@@ -38,7 +38,7 @@ class ann_ai(base_ai):
 
     def train(self, dataset=None, pt=True):
         if dataset is None:
-            data, ans = rndgen(game=100)
+            data, ans = gamegen(game=100)
         else:
             data, ans = dataset
         data = array([i for i in chain.from_iterable([self.featureize_in_piece(d) for d in data])])

@@ -117,6 +117,8 @@ class ann(object):
             # self.theta = array([0 for i in range(self.totalthetalen)])
 
     def fowardprop(self, allinp, theta=None, return_a=False, return_out=False):
+        if not (return_a or return_out):
+            raise RuntimeError('fowardprop call without expecting any return')
         if theta is None:
             theta = self.theta
         if isinstance(allinp, list):
@@ -157,8 +159,6 @@ class ann(object):
             return out
         elif return_a:
             return a
-        else:
-            raise RuntimeError('fowardprop call without expecting any return')
 
     def get(self, inp, a=False):
         return self.fowardprop(array([inp]), return_out=True, return_a=a)[0]  # [0]: first inp's output(while there's only one)
@@ -191,7 +191,7 @@ class ann(object):
         return array(delta)
 
     def gradient(self, theta, inp, ans):
-        PARALLEL = True
+        PARALLEL = True   # Parallel learning shows better convergence.
         if PARALLEL:
             g = [i / len(ans) for i in reduce(lambda a, b: a + b, [self.gradient_single(theta, thisinp, thisans) for thisinp, thisans in zip(inp, ans)])]
         else:  # Series Delta
@@ -202,7 +202,7 @@ class ann(object):
             g = theta - init_theta
         return array(g)
 
-    def train(self, inp, ans):
+    def train(self, inp, ans):  # 99.3% of time spent here when training ann-991!
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
             raise TypeError
         if not (len(inp.shape) == 2 and len(ans.shape) == 2 and len(inp) == len(ans) and len(inp[0]) == self.layernum[0] and len(ans[0] == self.layernum[-1])):
@@ -250,7 +250,7 @@ if __name__ == '__main__':
     search = handle_args()
     try:
         ANN_DIMENSION = [2, 2, 1]
-        data, ans = loaddata('xnor')
+        data, ans = loaddata('xor')
         if search:
             minval = 100000
             minx = None

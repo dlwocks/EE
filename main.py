@@ -12,10 +12,9 @@ RANDOM      0.91    0.03
 board       1.17    0.10
 abs         0.93    0.08
 '''
-if __name__ == '__main__':
-    # ai = logreg_ai().startlearn(game=100, opponent='random', pt=False, graph=False)
-    # complete_check(algorithm=ai.getstep, pt=True)
-    # complete_check(algorithm=randomstep, pt=True)
+
+
+def main():
     TRY = 10
     scorerec = []
     try:
@@ -31,8 +30,9 @@ if __name__ == '__main__':
             print('current logreg has feature of', LOGREG_FEATURE)
         elif ann:
             print('current ann has value network of layernum', LAYERNUM)
-
-        for i in count():
+        # itr = count()
+        itr = range(1)
+        for i in itr:
             if i != 0:
                 print('%d ais checked..' % i)
             if logreg:
@@ -50,11 +50,14 @@ if __name__ == '__main__':
                     mtheta = ai.theta_value
                 elif ann:
                     mtheta = ai.val_ann.theta
-        print('Finished check.\nAverage AEP for this ai is: %f\nStandard deviation for AEP is:%f' % (mean(scorerec), stdev(scorerec)))
+        # print('Finished check.\nAverage AEP for this ai is: %f\nStandard deviation for AEP is:%f' % (mean(scorerec), stdev(scorerec)))
     except KeyboardInterrupt:
         print('Check interrupted with %d try.\nAverage AEP for this ai is: %f\nStandard deviation for AEP is:%f' % (i, mean(scorerec), stdev(scorerec)))
     except:
         import traceback
         traceback.print_exc()
-    finally:
-        __import__('code').interact(local=locals())
+    return locals()
+
+if __name__ == '__main__':
+    from cProfile import run
+    run('main()', 'profileresult-2')
