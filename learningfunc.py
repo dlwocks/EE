@@ -1,9 +1,10 @@
-from numpy import array, dot, log, e, ndarray, append, sqrt, exp, reciprocal, add
+from numpy import array, dot, log, e, ndarray, append, sqrt
 from random import random, uniform
 from copy import copy
 from itertools import chain, count
 from functools import reduce
 from scipy.optimize import minimize
+from scipy.special import expit as sigmoid
 import warnings
 
 '''
@@ -17,13 +18,6 @@ def debug(message, param, always=False):
     ALLOWED_MSG_LIST = []
     if message in ALLOWED_MSG_LIST or always:
         print(message + ': ' + str(param))
-
-
-def sigmoid(z):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        ret = reciprocal(add(exp(-z), 1))
-    return ret
 
 
 def costfunc(theta, data, ans):
@@ -111,7 +105,10 @@ class ann(object):
                     (self.partialthetalen[-1], len(theta)))
             self.theta = theta
         else:
-            self.theta = _rndinit(layernum)
+            assert layernum == [9, 9, 1]
+            # DEBUGGING
+            with open('rndinit', 'rb') as o:
+                self.theta = __import__('pickle').load(o)
             # self.theta = array([(random()-0.5)
             #                     for i in range(self.totalthetalen)])
             # self.theta = array([0 for i in range(self.totalthetalen)])
@@ -206,11 +203,13 @@ class ann(object):
             raise TypeError
         if not (len(inp.shape) == 2 and len(ans.shape) == 2 and len(inp) == len(ans) and len(inp[0]) == self.layernum[0] and len(ans[0] == self.layernum[-1])):
             raise ValueError((len(inp.shape) == 2, len(ans.shape) == 2, len(inp) == len(ans), len(inp[0]) == self.layernum[0]))
-        minres = minimize(self.costfunc,
-                          self.theta,
-                          args=(inp, ans),
-                          jac=self.gradient,
-                          method='BFGS')
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            minres = minimize(self.costfunc,
+                              self.theta,
+                              args=(inp, ans),
+                              jac=self.gradient,
+                              method='BFGS')
         self.theta = minres.x
         debug('minres', minres)
         return minres

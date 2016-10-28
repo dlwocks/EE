@@ -21,7 +21,8 @@ def main():
         # dataset = ttthelper.rndgen(game=100)
         logreg, ann = False, True
         if ann:
-            dataset = json.load(open('rnddataset.dat'))
+            with open('rnddataset.dat') as o:
+                dataset = json.load(o)
             print('data for ann is loaded from file.')
         mscore, mtheta = 0, None
         LAYERNUM = [9, 9, 1]
