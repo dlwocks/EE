@@ -23,7 +23,7 @@ if __name__ == '__main__':
         logreg, ann = False, True
         if ann:
             dataset = json.load(open('rnddataset.dat'))
-            print('data is loaded from file.')
+            print('data for ann is loaded from file.')
         mscore, mtheta = 0, None
         LAYERNUM = [9, 9, 1]
         LOGREG_FEATURE = ['board']

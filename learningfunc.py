@@ -191,7 +191,7 @@ class ann(object):
         return array(delta)
 
     def gradient(self, theta, inp, ans):
-        PARALLEL = False
+        PARALLEL = True
         if PARALLEL:
             g = [i / len(ans) for i in reduce(lambda a, b: a + b, [self.gradient_single(theta, thisinp, thisans) for thisinp, thisans in zip(inp, ans)])]
         else:  # Series Delta
