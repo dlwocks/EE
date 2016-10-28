@@ -1,4 +1,4 @@
-from numpy import array, dot, log, e, ndarray, append, sqrt
+from numpy import array, dot, log, e, ndarray, append, sqrt, exp
 from random import random, uniform
 from copy import copy
 from itertools import chain, count
@@ -22,7 +22,7 @@ def debug(message, param, always=False):
 def sigmoid(z):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        ret = 1/(1+e**(-z))
+        ret = 1/(1+exp(-z))
     return ret
 
 
