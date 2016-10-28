@@ -1,16 +1,24 @@
 import logging as log
 from itertools import product
-from random import shuffle
+from random import shuffle, sample
 
 from ttthelper import isend
 
 
-def donothing(x):
+def donothing(x, _):
     return x
 
 
 def _permutation(row, r):
     pool = [(row[0], row[1], row[2]), (row[1], row[2], row[0]), (row[0], row[2], row[1])]
+    if r:
+        shuffle(pool)
+    for p in pool:
+        yield p
+
+
+def _row_gen_pos(r):
+    pool = [[(i, 0), (i, 1), (i, 2)] for i in range(3)] + [[(0, i), (1, i), (2, i)] for i in range(3)] + [[(0, 0), (1, 1), (2, 2)], [(0, 2), (1, 1), (2, 0)]]
     if r:
         shuffle(pool)
     for p in pool:
@@ -31,7 +39,7 @@ def _two_in_a_row(board, ainum, r):
                     return k
                 else:
                     temp = k
-    log.info(repr(temp))
+    # print(repr(temp))
     return temp
 
 
@@ -47,7 +55,7 @@ def _fork(board, ainum, turn, r):
 
 
 def _fork_opponent(board, ainum, turn, r):
-    oppofork = _fork(board, (ainum % 2) + 1, turn)
+    oppofork = _fork(board, (ainum % 2) + 1, turn, r)
     if not oppofork:
         return None
     create_tiar = set()
@@ -61,14 +69,6 @@ def _fork_opponent(board, ainum, turn, r):
         if postwo not in oppofork:
             return posone
     return oppofork[0]
-
-
-def _row_gen_pos(r):
-    pool = [[(i, 0), (i, 1), (i, 2)] for i in range(3)] + [[(0, i), (1, i), (2, i)] for i in range(3)] + [(0, 0), (1, 1), (2, 2), (0, 2), (1, 1), (2, 0)]
-    if r:
-        shuffle(pool)
-    for p in pool:
-        yield p
 
 
 def algorithm_wiki(board, ainum, turn, rndfrombest=False):
@@ -87,17 +87,17 @@ def algorithm_wiki(board, ainum, turn, rndfrombest=False):
     '''
     pos = _two_in_a_row(board, ainum, rndfrombest)
     if pos:
-        log.info('returned in _two_in_a_row')
+        print('returned in _two_in_a_row')
         return pos
     pos = _fork(board, ainum, turn, rndfrombest)
     if pos:
-        log.info('returned in own fork')
+        print('returned in own fork')
         return pos[0]
     pos = _fork_opponent(board, ainum, turn, rndfrombest)
     if pos:
-        log.info('returned in opponent fork')
+        print('returned in opponent fork')
         return pos
-    log.info('returned after tiar and fork')
+    print('returned after tiar and fork')
     if board[1][1] == 0:
         return 1, 1
     '''
@@ -111,14 +111,28 @@ def algorithm_wiki(board, ainum, turn, rndfrombest=False):
         return 0, 2
     '''
     if rndfrombest:
-        f = shuffle
+        f = sample
     else:
         f = donothing
-    for i in f([0, 2]):
-        for j in f([0, 2]):
+    for i in f([0, 2], 2):
+        for j in f([0, 2], 2):
             if board[i][j] == 0:
                 return i, j
-    for i, j in f([(0, 1), (1, 0), (1, 2), (2, 1)]):
+    for i, j in f([(0, 1), (1, 0), (1, 2), (2, 1)], 4):
         if board[i][j] == 0:
             return i, j
     assert False
+
+
+if __name__ == '__main__':
+    from ttttester import complete_check
+    from ttthelper import gamegen
+    from itertools import count
+    for i in count():
+        dataset = gamegen(1, algorithm_wiki, (True,))
+        if dataset[1][0] != 0.5:
+            print(i)
+            print(dataset)
+            break
+    bd = [[0, 0, 0], [0, 1, 0], [0, 0, 2]]
+    __import__('code').interact(local=locals())
