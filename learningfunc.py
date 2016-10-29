@@ -59,7 +59,7 @@ def _thetalen(layernum):
         temp = l
     return partiallen
 
-#@profile
+@profile
 def _fowardprop(theta, data, theta_dimension):
     '''
     theta: partial theta in the inbetween region, in array
@@ -117,20 +117,13 @@ class ann(object):
             # self.theta = array([0 for i in range(self.totalthetalen)])
         self.fowardprop_cache = None
 
-    #@profile
-    def fowardprop(self, allinp, theta=None, return_a=False, return_out=False):
-        if not (return_a or return_out):
-            raise RuntimeError('fowardprop call without expecting any return')
+    @profile
+    def fowardprop(self, allinp, theta=None, return_out=False):
         if theta is None:
             theta = self.theta
-        if isinstance(allinp, list):
-            allinp = array(allinp)
-        elif not isinstance(allinp, ndarray):
-            raise TypeError('input is not a ndarray or a list')
-        if return_a:
-            a = []
-        if return_out:
-            out = []
+        if not isinstance(allinp, ndarray):
+            raise TypeError('input is not a ndarray')
+        a = []
         for inp in allinp:
             temp_a = [append(array([1]), inp)]
             if len(inp) != self.layernum[0]:
@@ -140,47 +133,32 @@ class ann(object):
                 start, end = self.partialthetalen[l], self.partialthetalen[l+1]
                 thetaseg = theta[start: end]
                 inp = _fowardprop(thetaseg, inp, (self.layernum[l]+1, self.layernum[l+1]))
-                if return_a:
-                    if l == self.layercount - 2:
-                        temp_a.append(inp)
-                    else:
-                        temp_a.append(append(array([1]), inp))
-            if return_a:
-                a.append(temp_a)
-            if return_out:
-                # HACK: Avoid overflow in log
-                for i, o in enumerate(inp):
-                    if o == 1:
-                        inp[i] = 1 - 1e-10
-                    elif o == 0:
-                        inp[i] = 1e-10
-                out.append(inp)
-        if return_a and return_out:
-            return out, a
-        elif return_out:
-            return out
-        elif return_a:
-            return a
+                if l == self.layercount - 2:
+                    temp_a.append(inp)
+                else:
+                    temp_a.append(append(array([1]), inp))
+            a.append(temp_a)
+        return a
 
-    def get(self, inp, a=False):
-        return self.fowardprop(array([inp]), return_out=True, return_a=a)[0]  # [0]: first inp's output(while there's only one)
+    def get(self, inp):
+        return self.fowardprop(array([inp]))[0][-1]  # [0]: first inp's output(while there's only one)
 
-    #@profile
+    @profile
     def costfunc_single(self, theta, out, ans):
         c = sum(ans * -log(out) - (1 - ans) * log(1 - out))
         return c
 
-    #@profile
+    @profile
     def costfunc(self, theta, inp, ans):
-        out = array(self.fowardprop(inp, theta, return_out=True))
+        out = array(self.fowardprop(inp, theta)).T[-1]
         costlist = [self.costfunc_single(theta, thisout, thisans) for thisout, thisans in zip(out, ans)]
         totalcost = sum(costlist)
         return totalcost
 
-    #@profile
+    @profile
     def gradient_single(self, theta, inp, ans):
         inp = array([inp])
-        a = self.fowardprop(inp, theta, return_a=True)[0]
+        a = self.fowardprop(inp, theta)[0]
         lasterror = a[-1] - ans
         delta = list((a[-2][None].T * lasterror[None]).flatten())
         for i in range(self.layercount - 2, 0, -1):
