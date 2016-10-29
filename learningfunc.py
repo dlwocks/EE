@@ -60,13 +60,13 @@ def _thetalen(layernum):
     return partiallen
 
 @profile
-def _fowardprop(theta, data):
+def _fowardprop(theta, data, theta_dimension):
     '''
     theta: partial theta in the inbetween region, in array
     data: input (should be in array)
+    theta_dimension: should equal (len(data), len(theta) // len(data)) .
     '''
-    outputsize = len(theta) // len(data)
-    theta = theta.reshape(len(data), outputsize)
+    theta = theta.reshape(*theta_dimension)
     z = dot(data, theta)
     return sigmoid(z)
 
@@ -135,7 +135,7 @@ class ann(object):
                 inp = append(array([1]), inp)  # Add bias unit
                 start, end = self.partialthetalen[l], self.partialthetalen[l+1]
                 thetaseg = theta[start: end]
-                inp = _fowardprop(thetaseg, inp)
+                inp = _fowardprop(thetaseg, inp, (self.layernum[l]+1, self.layernum[l+1]))
                 if return_a:
                     if l == self.layercount - 2:
                         temp_a.append(inp)
@@ -178,7 +178,7 @@ class ann(object):
         inp = array([inp])
         a = self.fowardprop(inp, theta, return_a=True)[0]
         lasterror = a[-1] - ans
-        delta = list(chain.from_iterable(a[-2][None].T * lasterror[None]))
+        delta = list((a[-2][None].T * lasterror[None]).flatten())
         for i in range(self.layercount - 2, 0, -1):
             start, end = self.partialthetalen[i], self.partialthetalen[i+1]
             thetaseg = theta[start: end].reshape(
@@ -187,10 +187,9 @@ class ann(object):
             agrad = (a[i][1:] * (1 - a[i][1:]))
             thiserror = d * agrad
             lasterror = thiserror
-            delta = list(chain.from_iterable(a[i-1][None].T * lasterror[None])) + delta
+            delta = list((a[i-1][None].T * lasterror[None]).flatten()) + delta
         return array(delta)
 
-    @profile
     def gradient(self, theta, inp, ans):
         PARALLEL = True   # Parallel learning shows better convergence.
         if PARALLEL:
@@ -203,7 +202,7 @@ class ann(object):
             g = theta - init_theta
         return array(g)
 
-    def train(self, inp, ans):  # 99.3% of time spent here when training ann-991!
+    def train(self, inp, ans):
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
             raise TypeError
         if not (len(inp.shape) == 2 and len(ans.shape) == 2 and len(inp) == len(ans) and len(inp[0]) == self.layernum[0] and len(ans[0] == self.layernum[-1])):
