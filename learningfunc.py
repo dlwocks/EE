@@ -156,9 +156,7 @@ class ann(object):
         return totalcost
 
     @profile
-    def gradient_single(self, theta, inp, ans):
-        inp = array([inp])
-        a = self.fowardprop(inp, theta)[0]
+    def gradient_single(self, theta, a, ans):
         lasterror = a[-1] - ans
         delta = list((a[-2][None].T * lasterror[None]).flatten())
         for i in range(self.layercount - 2, 0, -1):
@@ -175,7 +173,8 @@ class ann(object):
     def gradient(self, theta, inp, ans):
         PARALLEL = True   # Parallel learning shows better convergence.
         if PARALLEL:
-            g = [i / len(ans) for i in reduce(lambda a, b: a + b, [self.gradient_single(theta, thisinp, thisans) for thisinp, thisans in zip(inp, ans)])]
+            a = self.fowardprop(inp, theta)
+            g = [i / len(ans) for i in reduce(lambda a, b: a + b, [self.gradient_single(theta, thisa, thisans) for thisa, thisans in zip(a, ans)])]
         else:  # Series Delta
             init_theta = copy(theta)
             for thisinp, thisans in zip(inp, ans):
