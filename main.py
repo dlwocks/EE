@@ -13,7 +13,6 @@ board       1.17    0.10
 abs         0.93    0.08
 '''
 
-
 def main():
     TRY = 10
     scorerec = []
@@ -21,7 +20,7 @@ def main():
         # dataset = ttthelper.rndgen(game=100)
         logreg, ann = False, True
         if ann:
-            with open('rnddataset.dat') as o:
+            with open('D:\\EE\\app\\rnddataset.dat') as o:
                 dataset = json.load(o)
             print('data for ann is loaded from file.')
         mscore, mtheta = 0, None
@@ -60,5 +59,6 @@ def main():
     return locals()
 
 if __name__ == '__main__':
-    from cProfile import run
-    run('main()', 'profileresult-3')
+    # from cProfile import run
+    # run('main()', 'profileresult-3')
+    main()

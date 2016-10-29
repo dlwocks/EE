@@ -59,16 +59,16 @@ def _thetalen(layernum):
         temp = l
     return partiallen
 
-
+@profile
 def _fowardprop(theta, data):
     '''
     theta: partial theta in the inbetween region, in array
     data: input (should be in array)
     '''
     outputsize = len(theta) // len(data)
-    z = dot(data, theta.reshape(len(data), outputsize))
-    a = sigmoid(z)
-    return a
+    theta = theta.reshape(len(data), outputsize)
+    z = dot(data, theta)
+    return sigmoid(z)
 
 
 def _rndinit(layernum):
@@ -107,12 +107,13 @@ class ann(object):
         else:
             assert layernum == [9, 9, 1]
             # DEBUGGING
-            with open('rndinit', 'rb') as o:
+            with open('D:\\EE\\app\\rndinit', 'rb') as o:
                 self.theta = __import__('pickle').load(o)
             # self.theta = array([(random()-0.5)
             #                     for i in range(self.totalthetalen)])
             # self.theta = array([0 for i in range(self.totalthetalen)])
 
+    @profile
     def fowardprop(self, allinp, theta=None, return_a=False, return_out=False):
         if not (return_a or return_out):
             raise RuntimeError('fowardprop call without expecting any return')
@@ -160,16 +161,19 @@ class ann(object):
     def get(self, inp, a=False):
         return self.fowardprop(array([inp]), return_out=True, return_a=a)[0]  # [0]: first inp's output(while there's only one)
 
+    @profile
     def costfunc_single(self, theta, out, ans):
         c = sum(ans * -log(out) - (1 - ans) * log(1 - out))
         return c
 
+    @profile
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta, return_out=True))
         costlist = [self.costfunc_single(theta, thisout, thisans) for thisout, thisans in zip(out, ans)]
         totalcost = sum(costlist)
         return totalcost
 
+    @profile
     def gradient_single(self, theta, inp, ans):
         inp = array([inp])
         a = self.fowardprop(inp, theta, return_a=True)[0]
@@ -186,6 +190,7 @@ class ann(object):
             delta = list(chain.from_iterable(a[i-1][None].T * lasterror[None])) + delta
         return array(delta)
 
+    @profile
     def gradient(self, theta, inp, ans):
         PARALLEL = True   # Parallel learning shows better convergence.
         if PARALLEL:
