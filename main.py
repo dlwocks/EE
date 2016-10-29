@@ -30,8 +30,8 @@ def main():
             print('current logreg has feature of', LOGREG_FEATURE)
         elif ann:
             print('current ann has value network of layernum', LAYERNUM)
-        # itr = count()
-        itr = range(1)
+        itr = count()
+        # itr = range(1)
         for i in itr:
             if i != 0:
                 print('%d ais checked..' % i)
@@ -56,7 +56,13 @@ def main():
     except:
         import traceback
         traceback.print_exc()
-    return locals()
+    finally:
+        if mscore > 0:
+            a = ann_ai.ann_ai(val_layernum=LAYERNUM)
+            a.val_ann.theta = mtheta
+        print('The best theta value is plugged into ann_ai object "a"')
+        board = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+        __import__('code').interact(local=locals())
 
 if __name__ == '__main__':
     # from cProfile import run

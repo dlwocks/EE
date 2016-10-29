@@ -59,7 +59,7 @@ def _thetalen(layernum):
         temp = l
     return partiallen
 
-@profile
+#@profile
 def _fowardprop(theta, data, theta_dimension):
     '''
     theta: partial theta in the inbetween region, in array
@@ -83,6 +83,8 @@ def _rndinit(layernum):
         inpnum = outnum
     return inittheta
 
+# TODO: Cache fowardprop
+# TODO: allinp already have bias
 
 class ann(object):
     def __init__(self, layernum, theta=None):
@@ -105,15 +107,17 @@ class ann(object):
                     (self.partialthetalen[-1], len(theta)))
             self.theta = theta
         else:
-            assert layernum == [9, 9, 1]
+            self.theta = _rndinit(layernum)
+            # assert layernum == [9, 9, 1]
             # DEBUGGING
-            with open('D:\\EE\\app\\rndinit', 'rb') as o:
-                self.theta = __import__('pickle').load(o)
+            #with open('D:\\EE\\app\\rndinit', 'rb') as o:
+            #    self.theta = __import__('pickle').load(o)
             # self.theta = array([(random()-0.5)
             #                     for i in range(self.totalthetalen)])
             # self.theta = array([0 for i in range(self.totalthetalen)])
+        self.fowardprop_cache = None
 
-    @profile
+    #@profile
     def fowardprop(self, allinp, theta=None, return_a=False, return_out=False):
         if not (return_a or return_out):
             raise RuntimeError('fowardprop call without expecting any return')
@@ -161,19 +165,19 @@ class ann(object):
     def get(self, inp, a=False):
         return self.fowardprop(array([inp]), return_out=True, return_a=a)[0]  # [0]: first inp's output(while there's only one)
 
-    @profile
+    #@profile
     def costfunc_single(self, theta, out, ans):
         c = sum(ans * -log(out) - (1 - ans) * log(1 - out))
         return c
 
-    @profile
+    #@profile
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta, return_out=True))
         costlist = [self.costfunc_single(theta, thisout, thisans) for thisout, thisans in zip(out, ans)]
         totalcost = sum(costlist)
         return totalcost
 
-    @profile
+    #@profile
     def gradient_single(self, theta, inp, ans):
         inp = array([inp])
         a = self.fowardprop(inp, theta, return_a=True)[0]
