@@ -1,6 +1,6 @@
-from numpy import array, dot, log, e, ndarray, append, sqrt
+from numpy import array, dot, log, e, ndarray, append, sqrt, array_equal
 from random import random, uniform
-from copy import copy
+from copy import deepcopy, copy
 from itertools import chain, count
 from functools import reduce
 from scipy.optimize import minimize
@@ -115,10 +115,14 @@ class ann(object):
             # self.theta = array([(random()-0.5)
             #                     for i in range(self.totalthetalen)])
             # self.theta = array([0 for i in range(self.totalthetalen)])
-        self.fowardprop_cache = None
+        self.fpcache_enabled = False
+        self.fpcache_theta = None
+        self.fpcache = None
 
     @profile
     def fowardprop(self, allinp, theta=None, return_out=False):
+        if self.fpcache_enabled and self.fpcache and array_equal(self.fpcache_theta, theta):
+            return self.fpcache
         if theta is None:
             theta = self.theta
         if not isinstance(allinp, ndarray):
@@ -138,6 +142,9 @@ class ann(object):
                 else:
                     temp_a.append(append(array([1]), inp))
             a.append(temp_a)
+        if self.fpcache_enabled:
+            self.fpcache_theta = copy(theta)
+            self.fpcache = a
         return a
 
     def get(self, inp):
@@ -170,6 +177,7 @@ class ann(object):
             delta = list((a[i-1][None].T * lasterror[None]).flatten()) + delta
         return array(delta)
 
+    @profile
     def gradient(self, theta, inp, ans):
         PARALLEL = True   # Parallel learning shows better convergence.
         if PARALLEL:
@@ -188,6 +196,7 @@ class ann(object):
             raise TypeError
         if not (len(inp.shape) == 2 and len(ans.shape) == 2 and len(inp) == len(ans) and len(inp[0]) == self.layernum[0] and len(ans[0] == self.layernum[-1])):
             raise ValueError((len(inp.shape) == 2, len(ans.shape) == 2, len(inp) == len(ans), len(inp[0]) == self.layernum[0]))
+        self.fpcache_enabled = True
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             minres = minimize(self.costfunc,
@@ -195,6 +204,7 @@ class ann(object):
                               args=(inp, ans),
                               jac=self.gradient,
                               method='BFGS')
+        self.fpcache_enabled = False
         self.theta = minres.x
         debug('minres', minres)
         return minres
