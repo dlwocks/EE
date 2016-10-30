@@ -1,4 +1,4 @@
-from numpy import array, dot, log, e, ndarray, append, sqrt, array_equal
+from numpy import array, dot, log, e, ndarray, append, sqrt, array_equal, zeros_like
 from random import random, uniform
 from copy import deepcopy, copy
 from itertools import chain, count
@@ -158,8 +158,9 @@ class ann(object):
     @profile
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta)).T[-1]
-        costlist = [self.costfunc_single(theta, thisout, thisans) for thisout, thisans in zip(out, ans)]
-        totalcost = sum(costlist)
+        totalcost = 0
+        for thisout, thisans in zip(out, ans):
+            totalcost += self.costfunc_single(theta, thisout, thisans)
         return totalcost
 
     @profile
@@ -182,7 +183,10 @@ class ann(object):
         PARALLEL = True   # Parallel learning shows better convergence.
         if PARALLEL:
             a = self.fowardprop(inp, theta)
-            g = [i / len(ans) for i in reduce(lambda a, b: a + b, [self.gradient_single(theta, thisa, thisans) for thisa, thisans in zip(a, ans)])]
+            g = zeros_like(theta)
+            for thisa, thisans in zip(a, ans):
+                g += self.gradient_single(theta, thisa, thisans)
+            g /= len(ans)
         else:  # Series Delta
             init_theta = copy(theta)
             for thisinp, thisans in zip(inp, ans):
