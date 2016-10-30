@@ -1,8 +1,15 @@
 def board(board):
+    '''Linear: Odds -> 1, Evens -> -1, None - > 0'''
     return [0 if not i else 1 if i % 2 else -1 for i in board]
 
 
+def extboard(board):
+    '''Half-Linear: len=18; First half: Odds -> 1, Else -> 0. Second half: Evens -> 1, Else -> 0'''
+    return [1 if i % 2 else 0 for i in board] + [1 if not i % 2 else 0 for i in board]
+
+
 def absboard(board):
+    '''Linear: None -> 0, Else -> 1'''
     return [0 if not i else 1 for i in board]
 
 

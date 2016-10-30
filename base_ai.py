@@ -1,7 +1,7 @@
 from numpy import array
 
 from learningfunc import gen_piece
-import features
+import features as ft
 
 '''
 Use of:     Value Network   Policy Network  Tree Search
@@ -11,8 +11,26 @@ Desired:    None            Yes(ML)         depth-0
 
 
 class base_ai(object):
-    FEATURE_FUNC_MAP = {'board': features.board}
-    FEATURE_NUM_MAP = {'board': 9}
+    FEATURE_FUNC_MAP = {'board': ft.board,
+                        'abs': ft.absboard,
+                        'extbd': ft.extboard,
+                        'nboard': ft.nboard,
+                        'lboard': ft.lboard,
+                        'oboard': ft.oboard,
+                        'orboard': ft.orboard,
+                        'ctsur': ft.ctsur}
+    FEATURE_NUM_MAP = {'board': 9,
+                       'abs': 9,
+                       'extbd': 18,
+                       'nboard': 9,
+                       'lboard': 9,
+                       'oboard': 9,
+                       'orboard': 9,
+                       'ctsur': 18}
+
+    @property
+    def feature_num(self):
+        return sum([self.FEATURE_NUM_MAP[f] for f in self.feature])
 
     def featureize_in_piece(self, board):
         piece = gen_piece(list(array(board).reshape((9,))))

@@ -24,14 +24,14 @@ def main():
                 dataset = json.load(o)
             print('data for ann is loaded from file.')
         mscore, mtheta = 0, None
-        LAYERNUM = [9, 9, 1]
+        ANN_FEATURE = ['board']
         LOGREG_FEATURE = ['board']
         if logreg:
             print('current logreg has feature of', LOGREG_FEATURE)
-        elif ann:
-            print('current ann has value network of layernum', LAYERNUM)
-        itr = count()
-        # itr = range(1)
+        if ann:
+            print('current ann has feature of', ANN_FEATURE)
+        #itr = count()
+        itr = range(1)
         for i in itr:
             if i != 0:
                 print('%d ais checked..' % i)
@@ -39,7 +39,7 @@ def main():
                 ai = logreg_ai.logreg_ai(feature=LOGREG_FEATURE)
                 ai.startlearn(game=100, opponent='random', pt=False, graph=False)
             elif ann:
-                ai = ann_ai.ann_ai(val_layernum=LAYERNUM)
+                ai = ann_ai.ann_ai(feature=ANN_FEATURE)
                 ai.train(dataset=dataset, pt=False)
             score = ttttester.complete_check(ai.getstep, pt=False)
             scorerec.append(score)
@@ -58,7 +58,7 @@ def main():
         traceback.print_exc()
     finally:
         if mscore > 0:
-            a = ann_ai.ann_ai(val_layernum=LAYERNUM)
+            a = ann_ai.ann_ai(feature=ANN_FEATURE)
             a.val_ann.theta = mtheta
         print('The best theta value is plugged into ann_ai object "a"')
         board = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]

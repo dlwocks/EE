@@ -9,26 +9,9 @@ import warnings
 from learningfunc import costfunc, costfunc_d
 from ttthelper import isend, emptyspace_pos
 from base_ai import base_ai
-import features as ft
 
 
 class logreg_ai(base_ai):
-    feature_num = 9
-    FEATURE_FUNC_MAP = {'board': ft.board,
-                        'abs': ft.absboard,
-                        'nboard': ft.nboard,
-                        'lboard': ft.lboard,
-                        'oboard': ft.oboard,
-                        'orboard': ft.orboard,
-                        'ctsur': ft.ctsur}
-    FEATURE_NUM_MAP = {'board': 9,
-                       'abs': 9,
-                       'nboard': 9,
-                       'lboard': 9,
-                       'oboard': 9,
-                       'orboard': 9,
-                       'ctsur': 18}
-
     def __init__(self, t=None, feature=['board']):
         self.data = []
         self.ans = []
@@ -38,7 +21,6 @@ class logreg_ai(base_ai):
             if f not in self.FEATURE_FUNC_MAP.keys():
                 raise ValueError('The feature "%s" is not supported' % f)
         self.feature = feature
-        self.feature_num = sum([self.FEATURE_NUM_MAP[f] for f in feature])
         if t is None:
             self.theta_value = array([(random()-0.5)/1000 for _ in range(self.feature_num)])
         else:
