@@ -151,16 +151,11 @@ class ann(object):
         return self.fowardprop(array([inp]))[0][-1]  # [0]: first inp's output(while there's only one)
 
     @profile
-    def costfunc_single(self, theta, out, ans):
-        c = sum(ans * -log(out) - (1 - ans) * log(1 - out))
-        return c
-
-    @profile
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta)).T[-1]
         totalcost = 0
-        for thisout, thisans in zip(out, ans):
-            totalcost += self.costfunc_single(theta, thisout, thisans)
+        for tout, tans in zip(out, ans):
+            totalcost += sum(tans * -log(tout) - (1 - tans) * log(1 - tout))
         return totalcost
 
     @profile
