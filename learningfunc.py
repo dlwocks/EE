@@ -58,17 +58,6 @@ def _thetalen(layernum):
         temp = l
     return partiallen
 
-@profile
-def _fowardprop(theta, data, theta_dimension):
-    '''
-    theta: partial theta in the inbetween region, in array
-    data: input (should be in array)
-    theta_dimension: should equal (len(data), len(theta) // len(data)) .
-    '''
-    theta = theta.reshape(*theta_dimension)
-    z = dot(data, theta)
-    return sigmoid(z)
-
 
 def _rndinit(layernum):
     inpnum = None
@@ -128,7 +117,7 @@ class ann(object):
                 temp_a.append(inp)  # Append bias_added layer to temp_a
                 start, end = self.partialthetalen[l], self.partialthetalen[l+1]
                 thetaseg = theta[start: end]
-                inp = _fowardprop(thetaseg, inp, (self.layernum[l]+1, self.layernum[l+1]))
+                inp = sigmoid(dot(inp, thetaseg.reshape(self.layernum[l]+1, self.layernum[l+1])))
             temp_a.append(inp)
             a.append(temp_a)
         if self.fpcache_enabled:
