@@ -129,18 +129,16 @@ class ann(object):
             raise TypeError('input is not a ndarray')
         a = []
         for inp in allinp:
-            temp_a = [append(array([1]), inp)]
+            temp_a = []
             if len(inp) != self.layernum[0]:
                 raise RuntimeError('input size doesn\'t match. length of input is %d, while it should be %d' % (len(inp), self.layernum[0]))
             for l in range(self.layercount - 1):
                 inp = append(array([1]), inp)  # Add bias unit
+                temp_a.append(inp)  # Append bias_added layer to temp_a
                 start, end = self.partialthetalen[l], self.partialthetalen[l+1]
                 thetaseg = theta[start: end]
                 inp = _fowardprop(thetaseg, inp, (self.layernum[l]+1, self.layernum[l+1]))
-                if l == self.layercount - 2:
-                    temp_a.append(inp)
-                else:
-                    temp_a.append(append(array([1]), inp))
+            temp_a.append(inp)
             a.append(temp_a)
         if self.fpcache_enabled:
             self.fpcache_theta = copy(theta)
@@ -190,6 +188,7 @@ class ann(object):
             g = theta - init_theta
         return array(g)
 
+    @profile
     def train(self, inp, ans):
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
             raise TypeError
