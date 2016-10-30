@@ -1,8 +1,7 @@
-from numpy import array, dot, log, e, ndarray, append, sqrt, array_equal, zeros_like
-from random import random, uniform
-from copy import deepcopy, copy
-from itertools import chain, count
-from functools import reduce
+from numpy import array, dot, log, ndarray, append, sqrt, array_equal, zeros_like
+from random import uniform
+from copy import copy
+from itertools import count
 from scipy.optimize import minimize
 from scipy.special import expit as sigmoid
 import warnings
@@ -83,8 +82,6 @@ def _rndinit(layernum):
         inpnum = outnum
     return inittheta
 
-# TODO: Cache fowardprop
-# TODO: allinp already have bias
 
 class ann(object):
     def __init__(self, layernum, theta=None):
@@ -108,12 +105,6 @@ class ann(object):
             self.theta = theta
         else:
             self.theta = _rndinit(layernum)
-            # assert layernum == [9, 9, 1]
-            # DEBUGGING
-            #with open('D:\\EE\\app\\rndinit', 'rb') as o:
-            #    self.theta = __import__('pickle').load(o)
-            # self.theta = array([(random()-0.5)
-            #                     for i in range(self.totalthetalen)])
             # self.theta = array([0 for i in range(self.totalthetalen)])
         self.fpcache_enabled = False
         self.fpcache_theta = None
@@ -166,9 +157,9 @@ class ann(object):
                 self.layernum[i]+1, self.layernum[i+1])
             d = dot(thetaseg[1:], lasterror)
             agrad = (a[i][1:] * (1 - a[i][1:]))
-            thiserror = d * agrad
-            lasterror = thiserror
-            delta = list((a[i-1][None].T * lasterror[None]).flatten()) + delta
+            lasterror = d * agrad  # This is in fact this(ith) layer's error; below same.
+            subdelta = list((a[i-1][None].T * lasterror[None]).flatten())
+            delta = subdelta + delta
         return array(delta)
 
     @profile
