@@ -73,6 +73,7 @@ def _rndinit(layernum):
 
 
 def gradientcheck(annobject, inp, ans):
+    '''Relative Difference is consistent!'''
     eps = 1e-10
     grad = []
     for i in range(annobject.totalthetalen):
@@ -124,7 +125,7 @@ class ann(object):
         self.fpcache_theta = None
         self.fpcache = None
 
-    #@profile
+    @profile
     def fowardprop(self, allinp, theta=None, return_out=False):
         if self.fpcache_enabled and self.fpcache and array_equal(self.fpcache_theta, theta):
             return self.fpcache
@@ -138,11 +139,12 @@ class ann(object):
             if len(inp) != self.layernum[0]:
                 raise RuntimeError('input size doesn\'t match. length of input is %d, while it should be %d' % (len(inp), self.layernum[0]))
             for l in range(self.layercount - 1):
-                inp = append(array([1]), inp)  # Add bias unit
-                temp_a.append(inp)  # Append bias_added layer to temp_a
+                # inp = append(array([1]), inp)  # Add bias unit
+                temp_a.append(inp)  # Append bias UNADDED layer to temp_a
                 start, end = self.partialthetalen[l], self.partialthetalen[l+1]
-                thetaseg = theta[start: end]
-                inp = sigmoid(dot(inp, thetaseg.reshape(self.layernum[l]+1, self.layernum[l+1])))
+                bias = theta[start:start+self.layernum[l+1]]
+                thetaseg = theta[start+self.layernum[l+1]: end]
+                inp = sigmoid(dot(inp, thetaseg.reshape(self.layernum[l], self.layernum[l+1])) + bias)
             temp_a.append(inp)
             a.append(temp_a)
         if self.fpcache_enabled:
@@ -153,7 +155,7 @@ class ann(object):
     def get(self, inp):
         return self.fowardprop(array([inp]))[0][-1]  # [0]: first inp's output(while there's only one)
 
-    #@profile
+    @profile
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta)).T[-1]
         totalcost = 0
@@ -161,22 +163,22 @@ class ann(object):
             totalcost += sum(tans * -log(tout) - (1 - tans) * log(1 - tout))
         return totalcost
 
-    #@profile
+    @profile
     def gradient_single(self, theta, a, ans):
         lasterror = a[-1] - ans
-        delta = list((a[-2][None].T * lasterror[None]).flatten())
+        delta = list(lasterror) + list((a[-2][None].T * lasterror[None]).flatten())
         for i in range(self.layercount - 2, 0, -1):
             start, end = self.partialthetalen[i], self.partialthetalen[i+1]
-            thetaseg = theta[start: end].reshape(
-                self.layernum[i]+1, self.layernum[i+1])
-            d = dot(thetaseg[1:], lasterror)
-            agrad = (a[i][1:] * (1 - a[i][1:]))
+            thetaseg = theta[start+self.layernum[i+1]: end].reshape(
+                self.layernum[i], self.layernum[i+1])
+            d = dot(thetaseg, lasterror)
+            agrad = (a[i] * (1 - a[i]))
             lasterror = d * agrad  # This is in fact this(ith) layer's error; below same.
-            subdelta = list((a[i-1][None].T * lasterror[None]).flatten())
+            subdelta = list(lasterror) + list((a[i-1][None].T * lasterror[None]).flatten())
             delta = subdelta + delta
         return array(delta)
 
-    #@profile
+    @profile
     def gradient(self, theta, inp, ans):
         PARALLEL = True   # Parallel learning shows better convergence.
         if PARALLEL:
@@ -193,7 +195,7 @@ class ann(object):
             g = theta - init_theta
         return g
 
-    #@profile
+    @profile
     def train(self, inp, ans):
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
             raise TypeError

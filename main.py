@@ -29,13 +29,13 @@ def main():
             print('data for ann is loaded from file.')
         mscore, mtheta = 0, None
         FEATURE = ['board']
-        VAL_HIDDEN = [18, 18]
+        VAL_HIDDEN = [9]
         if logreg:
             print('current logreg has feature of', FEATURE)
         if ann:
             print('current ann has feature of', FEATURE, 'and hidden layer of', VAL_HIDDEN)
-        itr = count()
-        #itr = range(1)
+        #itr = count()
+        itr = range(1)
         for i in itr:
             if i != 0:
                 if i % (i // 10 + 1) == 0:
