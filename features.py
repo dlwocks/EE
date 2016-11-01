@@ -31,6 +31,10 @@ def orboard(board):
     m = max(board)
     return [0 if not i else (m - i + 1) if i % 2 else -(m - i + 1) for i in board]
 
+
+def nextplayer(board):
+    return [1 if max(board) % 2 else -1]
+
 ctsur_map = {0: [1, 3, 4],
              1: [0, 2, 3, 4, 5],
              2: [1, 4, 5],

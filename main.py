@@ -11,6 +11,10 @@ Feature     Mean    StdDev
 RANDOM      0.91    0.03
 board       1.17    0.10
 abs         0.93    0.08
+
+VAL_ANN:
+Feature/Hidden:
+board + [] = 1.225722
 '''
 
 def main():
@@ -24,22 +28,23 @@ def main():
                 dataset = json.load(o)
             print('data for ann is loaded from file.')
         mscore, mtheta = 0, None
-        ANN_FEATURE = ['board']
-        LOGREG_FEATURE = ['board']
+        FEATURE = ['board']
+        VAL_HIDDEN = [18, 18]
         if logreg:
-            print('current logreg has feature of', LOGREG_FEATURE)
+            print('current logreg has feature of', FEATURE)
         if ann:
-            print('current ann has feature of', ANN_FEATURE)
-        #itr = count()
-        itr = range(1)
+            print('current ann has feature of', FEATURE, 'and hidden layer of', VAL_HIDDEN)
+        itr = count()
+        #itr = range(1)
         for i in itr:
             if i != 0:
-                print('%d ais checked..' % i)
+                if i % (i // 10 + 1) == 0:
+                    print('%d ais checked..' % i)
             if logreg:
-                ai = logreg_ai.logreg_ai(feature=LOGREG_FEATURE)
+                ai = logreg_ai.logreg_ai(feature=FEATURE)
                 ai.startlearn(game=100, opponent='random', pt=False, graph=False)
             elif ann:
-                ai = ann_ai.ann_ai(feature=ANN_FEATURE)
+                ai = ann_ai.ann_ai(feature=FEATURE, val_hidden=VAL_HIDDEN)
                 ai.train(dataset=dataset, pt=False)
             score = ttttester.complete_check(ai.getstep, pt=False)
             scorerec.append(score)
@@ -58,11 +63,14 @@ def main():
         traceback.print_exc()
     finally:
         if mscore > 0:
-            a = ann_ai.ann_ai(feature=ANN_FEATURE)
+            a = ann_ai.ann_ai(feature=FEATURE)
             a.val_ann.theta = mtheta
         print('The best theta value is plugged into ann_ai object "a"')
         board = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-        __import__('code').interact(local=locals())
+        try:
+            __import__('code').interact(local=locals())
+        except KeyboardInterrupt:
+            pass
 
 if __name__ == '__main__':
     # from cProfile import run

@@ -1,4 +1,4 @@
-from numpy import array, dot, log, ndarray, append, sqrt, array_equal, zeros_like
+from numpy import array, dot, log, ndarray, append, sqrt, array_equal, zeros_like, isclose
 from random import uniform
 from copy import copy
 from itertools import count
@@ -72,6 +72,31 @@ def _rndinit(layernum):
     return inittheta
 
 
+def gradientcheck(annobject, inp, ans):
+    eps = 1e-10
+    grad = []
+    for i in range(annobject.totalthetalen):
+        annobject.theta[i] += eps
+        cost1 = annobject.costfunc(annobject.theta, inp, ans)
+        annobject.theta[i] -= 2 * eps
+        cost2 = annobject.costfunc(annobject.theta, inp, ans)
+        grad.append((cost1 - cost2) / 2 / eps)
+        annobject.theta[i] += eps
+    gradcalc = a.gradient(a.theta, data, ans)
+    grad = array(grad) / len(inp[0])
+    print('gradient checking', grad)
+    print('calculated gradient', gradcalc)
+    print('adiff', grad - gradcalc)
+    print('rdiff', grad / gradcalc)
+    return isclose(array(grad), gradcalc)
+
+
+
+'''
+TODO:
+Reinforcement learning using trained value network
+Policy Network Training using perfectdataset
+'''
 class ann(object):
     def __init__(self, layernum, theta=None):
         if not isinstance(layernum, list):
@@ -99,7 +124,7 @@ class ann(object):
         self.fpcache_theta = None
         self.fpcache = None
 
-    @profile
+    #@profile
     def fowardprop(self, allinp, theta=None, return_out=False):
         if self.fpcache_enabled and self.fpcache and array_equal(self.fpcache_theta, theta):
             return self.fpcache
@@ -128,7 +153,7 @@ class ann(object):
     def get(self, inp):
         return self.fowardprop(array([inp]))[0][-1]  # [0]: first inp's output(while there's only one)
 
-    @profile
+    #@profile
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta)).T[-1]
         totalcost = 0
@@ -136,7 +161,7 @@ class ann(object):
             totalcost += sum(tans * -log(tout) - (1 - tans) * log(1 - tout))
         return totalcost
 
-    @profile
+    #@profile
     def gradient_single(self, theta, a, ans):
         lasterror = a[-1] - ans
         delta = list((a[-2][None].T * lasterror[None]).flatten())
@@ -151,7 +176,7 @@ class ann(object):
             delta = subdelta + delta
         return array(delta)
 
-    @profile
+    #@profile
     def gradient(self, theta, inp, ans):
         PARALLEL = True   # Parallel learning shows better convergence.
         if PARALLEL:
@@ -166,9 +191,9 @@ class ann(object):
                 grad = self.gradient_single(theta, thisinp, thisans) / len(ans)
                 theta = theta + grad
             g = theta - init_theta
-        return array(g)
+        return g
 
-    @profile
+    #@profile
     def train(self, inp, ans):
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
             raise TypeError

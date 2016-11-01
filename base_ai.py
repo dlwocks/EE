@@ -18,7 +18,8 @@ class base_ai(object):
                         'lboard': ft.lboard,
                         'oboard': ft.oboard,
                         'orboard': ft.orboard,
-                        'ctsur': ft.ctsur}
+                        'ctsur': ft.ctsur,
+                        'nextplayer': ft.nextplayer}
     FEATURE_NUM_MAP = {'board': 9,
                        'abs': 9,
                        'extbd': 18,
@@ -26,7 +27,8 @@ class base_ai(object):
                        'lboard': 9,
                        'oboard': 9,
                        'orboard': 9,
-                       'ctsur': 18}
+                       'ctsur': 18,
+                       'nextplayer': 1}
 
     @property
     def feature_num(self):

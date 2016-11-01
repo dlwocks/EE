@@ -7,18 +7,16 @@ from base_ai import base_ai
 
 
 class ann_ai(base_ai):
-    def __init__(self, val_layernum=None, feature=['board']):
-        self.feature = feature
-        if val_layernum is None:
-            self.val_ann = ann([self.feature_num, self.feature_num, 1])
-        else:
-            if val_layernum[0] != self.feature_num:
-                raise ValueError("Input layer's node number is inconsistent with feature to be inputted")
-            self.val_ann = ann(val_layernum)
+    def __init__(self, val_hidden=None, pol_hidden=None, feature=['board']):
         self.USE_VAL = True
         self.USE_POL = False
-        if self.USE_VAL and self.val_ann.layernum[-1] != 1:
-            raise ValueError('val_ann has more than 1 output unit. Are you sure it is for value network?')
+        self.feature = feature
+        if self.USE_VAL:
+            val_layernum = [self.feature_num] + ([] if val_hidden is None else val_hidden) + [1]
+            self.val_ann = ann(val_layernum)
+        if self.USE_POL:
+            pol_layernum = [self.feature_num] + ([] if pol_hidden is None else pol_hidden) + [1]
+            self.pol_ann = ann(pol_layernum)
 
     def getstep(self, board, ainum, step):
         if self.USE_VAL and self.USE_POL:
@@ -34,7 +32,9 @@ class ann_ai(base_ai):
                     mi, mj, mout = i, j, out
             return mi, mj
         elif self.USE_POL:
-            raise NotImplementedError
+            out = self.pol_ann.get(self.featureize_final(board))
+            maxindex = out.index(max(out))
+            return maxindex // 3, maxindex % 3
         else:
             raise NotImplementedError
 
