@@ -38,19 +38,29 @@ class ann_ai(base_ai):
         else:
             raise NotImplementedError
 
-    def train(self, dataset=None, pt=True):
-        if dataset is None:
-            data, ans = gamegen(game=100)
-        else:
-            data, ans = dataset
+    def process_dataset(self, dataset):
+        data, ans = dataset
         data = array([i for i in chain.from_iterable([self.featureize_in_piece(d) for d in data])])
         ans = array([array([a]) for a in ans])
+        return data, ans
+
+    def train(self, dataset=None, pt=True, pt_option='all'):
+        if dataset is None:
+            data, ans = self.process_dataset(gamegen(game=100))
+        else:
+            data, ans = self.process_dataset(dataset)
         if self.USE_VAL and self.USE_POL:
             raise NotImplementedError
         elif self.USE_VAL:
             minres = self.val_ann.train(data, ans)
             if pt:
-                print(minres)
+                available_option = ['fun', 'hess_inv', 'jac', 'message', 'nfev', 'nit', 'njev', 'status', 'success', 'x']
+                if pt_option == 'all':
+                    print(minres)
+                else:
+                    for o in available_option:
+                        if o in pt_option:
+                            print('    %s:' % o, eval('minres.' + o))
         elif self.USE_POL:
             raise NotImplementedError
         else:

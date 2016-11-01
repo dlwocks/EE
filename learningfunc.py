@@ -125,7 +125,7 @@ class ann(object):
         self.fpcache_theta = None
         self.fpcache = None
 
-    @profile
+    #@profile
     def fowardprop(self, allinp, theta=None, return_out=False):
         if self.fpcache_enabled and self.fpcache and array_equal(self.fpcache_theta, theta):
             return self.fpcache
@@ -145,6 +145,11 @@ class ann(object):
                 bias = theta[start:start+self.layernum[l+1]]
                 thetaseg = theta[start+self.layernum[l+1]: end]
                 inp = sigmoid(dot(inp, thetaseg.reshape(self.layernum[l], self.layernum[l+1])) + bias)
+                for i, o in enumerate(inp):
+                    if o == 1:
+                        inp[i] = 1 - 1e-10
+                    elif o == 0:
+                        inp[i] = 1e-10
             temp_a.append(inp)
             a.append(temp_a)
         if self.fpcache_enabled:
@@ -155,7 +160,7 @@ class ann(object):
     def get(self, inp):
         return self.fowardprop(array([inp]))[0][-1]  # [0]: first inp's output(while there's only one)
 
-    @profile
+    #@profile
     def costfunc(self, theta, inp, ans):
         out = array(self.fowardprop(inp, theta)).T[-1]
         totalcost = 0
@@ -163,7 +168,7 @@ class ann(object):
             totalcost += sum(tans * -log(tout) - (1 - tans) * log(1 - tout))
         return totalcost
 
-    @profile
+    #@profile
     def gradient_single(self, theta, a, ans):
         lasterror = a[-1] - ans
         delta = list(lasterror) + list((a[-2][None].T * lasterror[None]).flatten())
@@ -178,7 +183,7 @@ class ann(object):
             delta = subdelta + delta
         return array(delta)
 
-    @profile
+    #@profile
     def gradient(self, theta, inp, ans):
         PARALLEL = True   # Parallel learning shows better convergence.
         if PARALLEL:
@@ -195,7 +200,7 @@ class ann(object):
             g = theta - init_theta
         return g
 
-    @profile
+    #@profile
     def train(self, inp, ans):
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
             raise TypeError
@@ -208,7 +213,7 @@ class ann(object):
                               self.theta,
                               args=(inp, ans),
                               jac=self.gradient,
-                              method='BFGS')
+                              method='CG')
         self.fpcache_enabled = False
         self.theta = minres.x
         debug('minres', minres)

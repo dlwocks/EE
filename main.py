@@ -37,16 +37,16 @@ def main():
         #itr = count()
         itr = range(1)
         for i in itr:
-            if i != 0:
-                if i % (i // 10 + 1) == 0:
-                    print('%d ais checked..' % i)
+            if i % (i // 10 + 1) == 0:
+                print('Checking %dth ai..' % (i + 1))
             if logreg:
                 ai = logreg_ai.logreg_ai(feature=FEATURE)
                 ai.startlearn(game=100, opponent='random', pt=False, graph=False)
             elif ann:
                 ai = ann_ai.ann_ai(feature=FEATURE, val_hidden=VAL_HIDDEN)
-                ai.train(dataset=dataset, pt=False)
+                ai.train(dataset=dataset, pt=True, pt_option=['message', 'fun'])
             score = ttttester.complete_check(ai.getstep, pt=False)
+            print('    score:', score)
             scorerec.append(score)
             if score > mscore:
                 print('Maximum value found on %dth attempt: %f' % (i + 1, score))
@@ -65,7 +65,7 @@ def main():
         if mscore > 0:
             a = ann_ai.ann_ai(feature=FEATURE)
             a.val_ann.theta = mtheta
-        print('The best theta value is plugged into ann_ai object "a"')
+            print('The best theta value is plugged into ann_ai object "a"')
         board = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
         try:
             __import__('code').interact(local=locals())
