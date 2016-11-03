@@ -1,3 +1,6 @@
+'''
+The base of ann_ai and logreg_ai
+'''
 from numpy import array
 
 from learningfunc import gen_piece

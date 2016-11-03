@@ -1,8 +1,15 @@
 '''Tic-Tac-Toe tester.
+Tests the performance of an tic-tac-toe algorithm by complete_check.
+It generates every game that may possibly occur when the algorithm is playing
+(Given that the algorithm's output only depends on board status rather than, say, random functions)
+And counts the number of game that algorithm win, lose, or draw.
+
+Board definition:
 The board in this system is a 3*3 array.
 0 in the array represent empty space.
 Odd number in the array represents 'odd player', who definitely goes first.
 Even number in the array represents 'even player', who definitely goes second.
+Number n in the board represent nth step played in the game.
 '''
 import logging as log
 from itertools import product, repeat

@@ -1,3 +1,6 @@
+'''
+Defines algorithm_wiki, a perfect algorithm for tic-tac-toe
+'''
 import logging as log
 from itertools import product
 from random import shuffle, sample

@@ -1,11 +1,22 @@
+'''
+AI using artificial neural network.
+'''
 from numpy import array
 from itertools import chain
 
 from ttthelper import emptyspace_pos, gamegen
 from learningfunc import ann
 from base_ai import base_ai
+import pyximport
+import numpy as np
+pyximport.install(setup_args={'include_dirs': np.get_include()})
+import cythonann
 
-
+'''
+TODO:
+Reinforcement learning using trained value network
+Policy Network Training using perfectdataset
+'''
 class ann_ai(base_ai):
     def __init__(self, val_hidden=None, pol_hidden=None, feature=['board']):
         self.USE_VAL = True
@@ -13,10 +24,10 @@ class ann_ai(base_ai):
         self.feature = feature
         if self.USE_VAL:
             val_layernum = [self.feature_num] + ([] if val_hidden is None else val_hidden) + [1]
-            self.val_ann = ann(val_layernum)
+            self.val_ann = cythonann.ann(val_layernum)
         if self.USE_POL:
             pol_layernum = [self.feature_num] + ([] if pol_hidden is None else pol_hidden) + [1]
-            self.pol_ann = ann(pol_layernum)
+            self.pol_ann = cythonann.ann(pol_layernum)
 
     def getstep(self, board, ainum, step):
         if self.USE_VAL and self.USE_POL:
@@ -44,7 +55,7 @@ class ann_ai(base_ai):
         ans = array([array([a]) for a in ans])
         return data, ans
 
-    def train(self, dataset=None, pt=True, pt_option='all'):
+    def train(self, dataset=None, pt=True, pt_option='all', gtol=1e-5):
         if dataset is None:
             data, ans = self.process_dataset(gamegen(game=100))
         else:
@@ -52,7 +63,7 @@ class ann_ai(base_ai):
         if self.USE_VAL and self.USE_POL:
             raise NotImplementedError
         elif self.USE_VAL:
-            minres = self.val_ann.train(data, ans)
+            minres = self.val_ann.train(data, ans, gtol)
             if pt:
                 available_option = ['fun', 'hess_inv', 'jac', 'message', 'nfev', 'nit', 'njev', 'status', 'success', 'x']
                 if pt_option == 'all':

@@ -1,3 +1,8 @@
+'''
+Specifies features.
+
+All function here transforms a flattened tic-tac-toe board into another board using its own rule.
+'''
 def board(board):
     '''Linear: Odds -> 1, Evens -> -1, None - > 0'''
     return [0 if not i else 1 if i % 2 else -1 for i in board]

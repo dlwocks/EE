@@ -1,3 +1,6 @@
+'''
+AI using logistic regression.
+'''
 from numpy import array, dot, log, e, ndarray
 from scipy.optimize import minimize
 from copy import copy
