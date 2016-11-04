@@ -3,7 +3,7 @@ Miscellaneous functions and classes related to machine learning.
 
 For ANN, the one in cythonann.pyx is faster than the one here.
 '''
-from numpy import array, dot, log, ndarray, append, sqrt, array_equal, zeros_like, isclose, multiply
+from numpy import array, dot, log, ndarray, append, sqrt, array_equal, zeros_like, isclose, split, squeeze
 from random import uniform
 from copy import copy
 from itertools import count
@@ -25,23 +25,6 @@ def costfunc(theta, data, ans):
 
 def costfunc_d(theta, data, ans):
     return dot(data.T, (sigmoid(dot(data, theta)) - ans)) / len(theta)
-
-
-def gen_piece(board):
-    '''
-    input board: 1d, list
-    '''
-    temp = [0 for i in range(9)]
-    ret = []
-    for i in range(1, 10):
-        try:
-            temp[board.index(i)] = i
-        except ValueError:
-            if i <= 5:
-                raise  # The game couldn't have ended!
-            break
-        ret.append(copy(temp))
-    return ret
 
 
 def _thetalen(layernum):
@@ -119,7 +102,7 @@ class ann(object):
         self.fpcache = None
 
     #@profile
-    def fowardprop(self, allinp, theta=None, return_out=False):
+    def fowardprop(self, allinp, theta=None):
         if self.fpcache_enabled and self.fpcache and array_equal(self.fpcache_theta, theta):
             return self.fpcache
         if theta is None:
@@ -149,7 +132,7 @@ class ann(object):
 
     #@profile
     def costfunc(self, theta, inp, ans):
-        out = array(self.fowardprop(inp, theta)).T[-1]
+        out = array([d[-1] for d in self.fowardprop(inp, theta)])
         totalcost = 0
         for tout, tans in zip(out, ans):
             totalcost += sum(tans * -log(tout) - (1 - tans) * log(1 - tout))
@@ -190,7 +173,7 @@ class ann(object):
     #@profile
     def train(self, inp, ans, gtol=1e-5):
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
-            raise TypeError
+            raise TypeError(str(type(inp)), str(type(ans)))
         if not (len(inp.shape) == 2 and len(ans.shape) == 2 and len(inp) == len(ans) and len(inp[0]) == self.layernum[0] and len(ans[0]) == self.layernum[-1]):
             raise ValueError((len(inp.shape) == 2, len(ans.shape) == 2, len(inp) == len(ans), len(inp[0]) == self.layernum[0], len(ans[0]) == self.layernum[-1]))
         self.fpcache_enabled = True
@@ -204,7 +187,6 @@ class ann(object):
                               options={'gtol': gtol})
         self.fpcache_enabled = False
         self.theta = minres.x
-        debug('minres', minres)
         return minres
 
 

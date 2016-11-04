@@ -60,13 +60,11 @@ class ann(object):
             self.theta = theta
         else:
             self.theta = _rndinit(layernum)
-            # self.theta = array([0 for i in range(self.totalthetalen)])
         self.fpcache_enabled = False
         self.fpcache_theta = None
         self.fpcache = None
 
-    #@profile
-    def fowardprop(self, allinp, theta=None, return_out=False):
+    def fowardprop(self, allinp, theta=None):
         if self.fpcache_enabled and self.fpcache and array_equal(self.fpcache_theta, theta):
             return self.fpcache
         if theta is None:
@@ -92,17 +90,15 @@ class ann(object):
         return a
 
     def get(self, inp):
-        return self.fowardprop(array([inp]))[0][-1]  # [0]: first inp's output(while there's only one)
+        return self.fowardprop(array([inp]))[0][-1]  # [0]: first inp's output(while there's only one for .get)
 
-    #@profile
     def costfunc(self, theta, inp, ans):
-        out = array(self.fowardprop(inp, theta)).T[-1]
+        out = array([d[-1] for d in self.fowardprop(inp, theta)])
         totalcost = 0
         for tout, tans in zip(out, ans):
             totalcost += sum(tans * -log(tout) - (1 - tans) * log(1 - tout))
         return totalcost
 
-    #@profile
     def gradient_single(self, theta, a, ans):
         lasterror = a[-1] - ans
         delta = list(lasterror) + list((a[-2][None].T * lasterror[None]).flatten())
@@ -117,7 +113,6 @@ class ann(object):
             delta = subdelta + delta
         return array(delta)
 
-    #@profile
     def gradient(self, theta, inp, ans):
         PARALLEL = True   # Parallel learning shows better convergence.
         if PARALLEL:
@@ -134,10 +129,9 @@ class ann(object):
             g = theta - init_theta
         return g
 
-    #@profile
     def train(self, inp, ans, gtol=1e-5):
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
-            raise TypeError
+            raise TypeError(str(type(inp)), str(type(ans)))
         if not (len(inp.shape) == 2 and len(ans.shape) == 2 and len(inp) == len(ans) and len(inp[0]) == self.layernum[0] and len(ans[0]) == self.layernum[-1]):
             raise ValueError((len(inp.shape) == 2, len(ans.shape) == 2, len(inp) == len(ans), len(inp[0]) == self.layernum[0], len(ans[0]) == self.layernum[-1]))
         self.fpcache_enabled = True

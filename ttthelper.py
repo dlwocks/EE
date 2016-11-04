@@ -1,5 +1,6 @@
 from itertools import product
-from random import randint
+from random import randint, random
+from numpy import array
 
 
 def _row_gen(board):
@@ -68,21 +69,24 @@ def emptyspace_pos(board, step):
                 board[i][j] = 0
 
 
-def randomstep(board, _, __):
+def randomstep(board, _=None, __=None):
     while True:
         i, j = randint(0, 2), randint(0, 2)
         if board[i][j] == 0:
             return i, j
 
 
-def gamegen(gamenum, alg=randomstep, args=()):
+def gamegen(gamenum, alg=randomstep, args=(), noise=0):
     data, ans = [], []
     for i in range(gamenum):
         board = [[0 for i in range(3)]for i in range(3)]
         end = 0
         step = 1
         while not end and step < 10:
-            i, j = alg(board, (step+1) % 2 + 1, step, *args)
+            if random() < noise:
+                i, j = randomstep(board)
+            else:
+                i, j = alg(board, (step+1) % 2 + 1, step, *args)
             board[i][j] = step
             if 9 >= step >= 5:
                 end = isend(board, step+1)
@@ -92,3 +96,49 @@ def gamegen(gamenum, alg=randomstep, args=()):
         data.append(board)
         ans.extend([end if end <= 1 else 0 for _ in range(step)])
     return data, ans
+
+
+def gen_piece(board):
+    '''
+    input:
+    [1,2,3,4,5,6,7,8,9]
+    output:
+    [[1,0,0,0,0,0,0,0,0],
+     [1,2,0,0,0,0,0,0,0],
+     [1,2,3,0,0,0,0,0,0],
+     ...
+     [1,2,3,4,5,6,7,8,9]]
+    '''
+    temp = [0 for i in range(9)]
+    ret = []
+    for i in range(1, 10):
+        try:
+            temp[board.index(i)] = i
+        except ValueError:
+            if i <= 5:
+                raise  # The game couldn't have ended!
+            break
+        ret.append(temp[:])
+    return ret
+
+
+def extractmove(board):
+    '''
+    input:
+    [[1,2,3],[4,5,6],[7,8,9]] or [1,2,3,4,5,6,7,8,9]
+    output:
+    [[1,0,0,0,0,0,0,0,0],
+     [0,1,0,0,0,0,0,0,0],
+     [0,0,1,0,0,0,0,0,0],
+     ...
+     [0,0,0,0,0,0,0,0,1]]
+    '''
+    board = list(array(board).flatten())
+    ans = []
+    for i in range(2, 10):
+        try:
+            ind = board.index(i)
+        except ValueError:
+            break
+        ans.append([0 if i != ind else 1 for i in range(9)])
+    return ans

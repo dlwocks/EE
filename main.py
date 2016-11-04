@@ -24,21 +24,32 @@ abs         0.93    0.08
 VAL_ANN:
 Feature/Hidden:
 board + [] = 1.225722
+
+Dataset name definition
+<value or policy><hiddenlayer>-<AEP with 4 sig. fig. and decimal pt rmved>-<noise with 2 sig.fig. and decimal pt rmved>-dataset.dat
+e.g. v9-1288-10-dataset.dat
+
+Thetaval name definition
+<value or policy><hiddenlayer>-<AEP with 4 sig. fig. and decimal pt rmved>-theta.dat
+e.g. v9-1288-theta.dat
 '''
 
+
 def main(game):
+    print('TIPITCSDR')
     scorerec = []
     TOL = 1e-5
+    mscore, mtheta = 0, None
     try:
         # dataset = ttthelper.rndgen(game=100)
         logreg, ann = False, True
         if ann:
-            with open('D:\\EE\\app\\rnddataset.dat') as o:
+            # with open('D:\\EE\\app\\rnddataset.dat') as o:
+            with open('D:\\EE\\app\\%s.dat' % input('What dataset to use? <your input>.dat\n')) as o:
                 dataset = json.load(o)
             print('data for ann is loaded from file.')
-        mscore, mtheta = 0, None
         FEATURE = ['board']
-        VAL_HIDDEN = [9]
+        VAL_HIDDEN = []
         if logreg:
             print('current logreg has feature of', FEATURE)
         if ann:
@@ -58,7 +69,7 @@ def main(game):
                 ai.startlearn(game=100, opponent='random', pt=False, graph=False)
             elif ann:
                 ai = ann_ai.ann_ai(feature=FEATURE, val_hidden=VAL_HIDDEN)
-                ai.train(dataset=dataset, pt=True, pt_option='all', gtol=TOL)
+                ai.train(dataset=dataset, pt=True, pt_option=[], gtol=TOL)
             score = ttttester.complete_check(ai.getstep, pt=False)
             print('    score:', score)
             scorerec.append(score)
