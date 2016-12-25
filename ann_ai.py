@@ -106,7 +106,6 @@ if __name__ == '__main__':
     print('data and ans processed for pol_ann')
     #__import__('code').interact(local=locals())
     a.train(dataset=(data, ans))
-    input('Input to continue..')
     import ttttester
     ttttester.complete_check(a.getstep, pt=True)
     __import__('code').interact(local=locals())

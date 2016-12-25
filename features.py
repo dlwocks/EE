@@ -1,7 +1,7 @@
 '''
 Specifies features.
 
-All function here transforms a flattened tic-tac-toe board into another board using its own rule.
+All function here transforms a flattened tic-tac-toe board(as defined in ttttester.py) into another board using its own rule.
 '''
 def board(board):
     '''Linear: Odds -> 1, Evens -> -1, None - > 0'''
