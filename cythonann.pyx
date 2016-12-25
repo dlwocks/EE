@@ -1,8 +1,19 @@
 '''
-A Cython version of ANN defined in learningfunc.py
+A general implementation of ANN; cython version of the one defined in learningfunc.py
+
+How to use this in a script:
+# Import as following
+import numpy as np
+import pyximport
+pyximport.install(setup_args={'include_dirs': np.get_include()})
+from cythonann import ann
+# initialize as following
+ann = cythonann.ann([1, 2, 3, 4]) # Where there is 1 input unit, 2 hidden layer with 2, 3 hidden unit respectively, 4 output unit
+ann.train(inp, ans) # Where inp, ans are 2d-ndarray, with dimension (# of training case) * (# of inp(inp)/out(ans) unit)
+ann.get(inp) # Where inp is 1d-ndarray of one test data
 '''
 cimport numpy as np
-from numpy import array, dot, log, ndarray, append, sqrt, array_equal, zeros_like
+from numpy import array, dot, log, ndarray, append, sqrt, array_equal, zeros_like, empty_like, empty
 from random import uniform
 from copy import copy
 from scipy.optimize import minimize
@@ -65,27 +76,28 @@ class ann(object):
         self.fpcache = None
 
     def fowardprop(self, allinp, theta=None):
-        if self.fpcache_enabled and self.fpcache and array_equal(self.fpcache_theta, theta):
+        if self.fpcache_enabled and self.fpcache is not None and array_equal(self.fpcache_theta, theta):
             return self.fpcache
         if theta is None:
             theta = self.theta
         if not isinstance(allinp, ndarray):
             raise TypeError('input is not a ndarray')
-        a = []
-        for inp in allinp:
-            temp_a = []
+        a = empty(len(allinp), dtype='object')
+        for i, inp in enumerate(allinp):
+            single_a = []
             if len(inp) != self.layernum[0]:
                 raise RuntimeError('input size doesn\'t match. length of input is %d, while it should be %d' % (len(inp), self.layernum[0]))
             for l in range(self.layercount - 1):
-                temp_a.append(inp)  # Append bias UNADDED layer to temp_a
+                single_a.append(inp)  # Add bias UNADDED layer to single_a
                 start, end = self.partialthetalen[l], self.partialthetalen[l+1]
                 bias = theta[start:start+self.layernum[l+1]]
-                thetaseg = theta[start+self.layernum[l+1]: end]
-                inp = sigmoid(dot(inp, thetaseg.reshape(self.layernum[l], self.layernum[l+1])) + bias)
-            temp_a.append(inp)
-            a.append(temp_a)
+                thetaseg = theta[start+self.layernum[l+1]: end].reshape(self.layernum[l], self.layernum[l+1])
+                inp = sigmoid(dot(inp, thetaseg) + bias)  # equiv. to bias * 1: add it to add bias to input
+            single_a.append(inp)
+            a[i] = single_a
+        assert i == len(allinp) - 1
         if self.fpcache_enabled:
-            self.fpcache_theta = copy(theta)
+            self.fpcache_theta = theta.copy()
             self.fpcache = a
         return a
 
@@ -94,14 +106,17 @@ class ann(object):
 
     def costfunc(self, theta, inp, ans):
         out = array([d[-1] for d in self.fowardprop(inp, theta)])
-        totalcost = 0
-        for tout, tans in zip(out, ans):
-            totalcost += sum(tans * -log(tout) - (1 - tans) * log(1 - tout))
-        return totalcost
+        return (ans * -log(out) - (1 - ans) * log(1 - out)).sum()
 
     def gradient_single(self, theta, a, ans):
+        fillptr = self.totalthetalen
+        ln = self.layernum
+        delta = empty_like(theta)
         lasterror = a[-1] - ans
-        delta = list(lasterror) + list((a[-2][None].T * lasterror[None]).flatten())
+        delta[fillptr - ln[-2] * ln[-1]: fillptr] = (a[-2][None].T * lasterror[None]).flatten()
+        fillptr -= ln[-2] * ln[-1]
+        delta[fillptr - ln[-1]: fillptr] = lasterror
+        fillptr -= ln[-1]
         for i in range(self.layercount - 2, 0, -1):
             start, end = self.partialthetalen[i], self.partialthetalen[i+1]
             thetaseg = theta[start+self.layernum[i+1]: end].reshape(
@@ -109,8 +124,11 @@ class ann(object):
             d = dot(thetaseg, lasterror)
             agrad = a[i] * (1 - a[i])
             lasterror = d * agrad  # This is in fact this(ith) layer's error; below same.
-            subdelta = list(lasterror) + list((a[i-1][None].T * lasterror[None]).flatten())
-            delta = subdelta + delta
+            delta[fillptr - ln[i-1] * ln[i]: fillptr] = (a[i-1][None].T * lasterror[None]).flatten()
+            fillptr -= ln[i-1] * ln[i]
+            delta[fillptr - ln[i]: fillptr] = lasterror
+            fillptr -= ln[i]
+        assert fillptr == 0, 'fillptr should be 0, but is %d' % fillptr
         return array(delta)
 
     def gradient(self, theta, inp, ans):
