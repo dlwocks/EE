@@ -17,7 +17,7 @@ from numpy import array
 from copy import copy, deepcopy
 from random import randint
 
-from ai import algorithm_wiki
+from ai import alg_wiki
 from ttthelper import isend, printboard
 
 global count
@@ -50,9 +50,9 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
              (step, 'AI', printboard(board, None)))
     if 9 >= step >= 6:  # The game may have ended
         end = isend(board, step)
-        if end:
+        if end is not None:
             count['Iterator'] += 1
-            assert end != ainum, 'end:%s, ainum:%s, but last step was Iterator.' % (end, ainum)
+            assert end != ainum % 2, 'end:%s, ainum:%s, but last step was Iterator.' % (end, ainum)
             assert end != 0.5
             log.info('Iterator wins the game.')
             return
@@ -68,10 +68,10 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
              (step, 'Iterator', printboard(board, None)))
     if 9 >= step >= 6:  # The game may have ended
         end = isend(board, step)
-        if end:
+        if end is not None:
             count['AI'] += 1
             board[i][j] = 0
-            assert end == ainum, 'end:%s, ainum:%s, but last step was AI.' % (end, ainum)
+            assert end == ainum % 2, 'end:%s, ainum:%s, but last step was AI.' % (end, ainum)
             assert end != 0.5
             log.info('AI wins the game.')
             return
@@ -86,7 +86,7 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
     board[i][j] = 0
 
 
-def complete_check(algorithm=algorithm_wiki, pt=False):
+def complete_check(algorithm=alg_wiki, pt=False):
     global count
     count = {'AI': 0, 'Iterator': 0, 'Draw': 0}
     _complete_check(algorithm, ainum=1)
@@ -123,7 +123,7 @@ def play_with(algorithm, playerfirst=True):
         board[i][j] = step
         if 9 >= step >= 5:
             end = isend(board, step+1)
-            if end:
+            if end is not None:
                 if end == 0.5:
                     print('the game ended in draw.')
                 elif end % 2 == ainum % 2:

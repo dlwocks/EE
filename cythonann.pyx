@@ -1,5 +1,5 @@
 '''
-A general implementation of ANN; cython version of the one defined in learningfunc.py
+A general implementation of ANN cython version of the one defined in learningfunc.py
 
 How to use this in a script:
 # Import as following
@@ -12,10 +12,11 @@ ann = cythonann.ann([1, 2, 3, 4]) # Where there is 1 input unit, 2 hidden layer 
 ann.train(inp, ans) # Where inp, ans are 2d-ndarray, with dimension (# of training case) * (# of inp(inp)/out(ans) unit)
 ann.get(inp) # Where inp is 1d-ndarray of one test data
 '''
+import numpy as np
 cimport numpy as np
-from numpy import array, dot, log, ndarray, append, sqrt, array_equal, zeros_like, empty_like, empty
 from random import uniform
 from copy import copy
+from itertools import accumulate
 from scipy.optimize import minimize
 from scipy.special import expit as sigmoid
 import warnings
@@ -38,13 +39,13 @@ def _thetalen(layernum):
 
 def _rndinit(layernum):
     inpnum = None
-    inittheta = array([])
+    inittheta = np.array([])
     for outnum in layernum:
         if inpnum:
-            eps_init = sqrt(6)/sqrt(inpnum+outnum)
-            appendedtheta = array([uniform(-eps_init, eps_init)
+            eps_init = np.sqrt(6)/np.sqrt(inpnum+outnum)
+            appendedtheta = np.array([uniform(-eps_init, eps_init)
                                    for i in range((inpnum+1)*outnum)])
-            inittheta = append(inittheta, appendedtheta)
+            inittheta = np.append(inittheta, appendedtheta)
         inpnum = outnum
     return inittheta
 
@@ -59,9 +60,11 @@ class ann(object):
         self.partialthetalen = _thetalen(layernum)
         self.totalthetalen = self.partialthetalen[-1]
         self.layernum = layernum
+        self.unitnum = sum(layernum)
         self.layercount = len(layernum)
+        self.cumlayernum = [0] + list(accumulate(layernum))[:-1]
         if theta is not None:
-            if not isinstance(theta, ndarray):
+            if not isinstance(theta, np.ndarray):
                 raise TypeError(
                     'param theta, though inputted, is not an array')
             if len(theta) != self.partialthetalen[-1]:
@@ -76,82 +79,73 @@ class ann(object):
         self.fpcache = None
 
     def fowardprop(self, allinp, theta=None):
-        if self.fpcache_enabled and self.fpcache is not None and array_equal(self.fpcache_theta, theta):
+        if self.fpcache_enabled and self.fpcache is not None and np.array_equal(self.fpcache_theta, theta):
             return self.fpcache
         if theta is None:
             theta = self.theta
-        if not isinstance(allinp, ndarray):
+        if not isinstance(allinp, np.ndarray):
             raise TypeError('input is not a ndarray')
-        a = empty(len(allinp), dtype='object')
-        for i, inp in enumerate(allinp):
-            single_a = []
-            if len(inp) != self.layernum[0]:
-                raise RuntimeError('input size doesn\'t match. length of input is %d, while it should be %d' % (len(inp), self.layernum[0]))
-            for l in range(self.layercount - 1):
-                single_a.append(inp)  # Add bias UNADDED layer to single_a
-                start, end = self.partialthetalen[l], self.partialthetalen[l+1]
-                bias = theta[start:start+self.layernum[l+1]]
-                thetaseg = theta[start+self.layernum[l+1]: end].reshape(self.layernum[l], self.layernum[l+1])
-                inp = sigmoid(dot(inp, thetaseg) + bias)  # equiv. to bias * 1: add it to add bias to input
-            single_a.append(inp)
-            a[i] = single_a
-        assert i == len(allinp) - 1
+        a = np.empty((len(allinp), self.unitnum))
+        for l in range(self.layercount - 1):
+            a[:,self.cumlayernum[l]:self.cumlayernum[l+1]] = allinp
+            start, end = self.partialthetalen[l], self.partialthetalen[l+1]
+            bias = theta[start:start+self.layernum[l+1]]
+            thetaseg = theta[start+self.layernum[l+1]: end].reshape(self.layernum[l], self.layernum[l+1])
+            allinp = sigmoid(np.dot(allinp, thetaseg) + bias)
+        a[:,self.cumlayernum[-1]:] = allinp
         if self.fpcache_enabled:
             self.fpcache_theta = theta.copy()
             self.fpcache = a
         return a
 
     def get(self, inp):
-        return self.fowardprop(array([inp]))[0][-1]  # [0]: first inp's output(while there's only one for .get)
+        return self.fowardprop(np.array([inp]))[0, self.cumlayernum[-1]:]  # [0]: first inp's output(while there's only one for .get)
 
     def costfunc(self, theta, inp, ans):
-        out = array([d[-1] for d in self.fowardprop(inp, theta)])
-        return (ans * -log(out) - (1 - ans) * log(1 - out)).sum()
-
-    def gradient_single(self, theta, a, ans):
-        fillptr = self.totalthetalen
-        ln = self.layernum
-        delta = empty_like(theta)
-        lasterror = a[-1] - ans
-        delta[fillptr - ln[-2] * ln[-1]: fillptr] = (a[-2][None].T * lasterror[None]).flatten()
-        fillptr -= ln[-2] * ln[-1]
-        delta[fillptr - ln[-1]: fillptr] = lasterror
-        fillptr -= ln[-1]
-        for i in range(self.layercount - 2, 0, -1):
-            start, end = self.partialthetalen[i], self.partialthetalen[i+1]
-            thetaseg = theta[start+self.layernum[i+1]: end].reshape(
-                self.layernum[i], self.layernum[i+1])
-            d = dot(thetaseg, lasterror)
-            agrad = a[i] * (1 - a[i])
-            lasterror = d * agrad  # This is in fact this(ith) layer's error; below same.
-            delta[fillptr - ln[i-1] * ln[i]: fillptr] = (a[i-1][None].T * lasterror[None]).flatten()
-            fillptr -= ln[i-1] * ln[i]
-            delta[fillptr - ln[i]: fillptr] = lasterror
-            fillptr -= ln[i]
-        assert fillptr == 0, 'fillptr should be 0, but is %d' % fillptr
-        return array(delta)
+        out = self.fowardprop(inp, theta)[:, self.cumlayernum[-1]:]
+        return (ans * -np.log(out) - (1 - ans) * np.log(1 - out)).sum()
 
     def gradient(self, theta, inp, ans):
-        PARALLEL = True   # Parallel learning shows better convergence.
-        if PARALLEL:
-            a = self.fowardprop(inp, theta)
-            g = zeros_like(theta)
-            for thisa, thisans in zip(a, ans):
-                g += self.gradient_single(theta, thisa, thisans)
-            g /= len(ans)
-        else:  # Series Delta
-            init_theta = copy(theta)
-            for thisinp, thisans in zip(inp, ans):
-                grad = self.gradient_single(theta, thisinp, thisans) / len(ans)
-                theta = theta + grad
-            g = theta - init_theta
+        a = self.fowardprop(inp, theta)
+        g = np.zeros_like(theta)
+        ln = self.layernum
+        cln = self.cumlayernum
+        fillptr = self.totalthetalen
+        lasterror = a[:, self.cumlayernum[-1]:] - ans
+        for i, thisa in enumerate(a):
+            g[fillptr - ln[-2] * ln[-1]: fillptr] += (thisa[cln[-2]:cln[-1]][None].T * lasterror[i][None]).flatten()
+        fillptr -= ln[-2] * ln[-1]
+        g[fillptr - ln[-1]: fillptr] = np.sum(lasterror, axis=0)
+        fillptr -= ln[-1]
+        for l in range(self.layercount - 2, 0, -1):
+            start, end = self.partialthetalen[l], self.partialthetalen[l+1]
+            thetaseg = theta[start+ln[l+1]: end].reshape(ln[l], ln[l+1])
+            d = np.inner(lasterror, thetaseg)
+            aseg = a[:,self.cumlayernum[l]: self.cumlayernum[l+1]]
+            agrad = aseg * (1 - aseg)
+            lasterror = d * agrad
+            for i, thisa in enumerate(a):
+                g[fillptr - ln[l-1] * ln[l]: fillptr] += (thisa[cln[l-1]: cln[l]][None].T * lasterror[i][None]).flatten()
+            fillptr -= ln[l-1] * ln[l]
+            g[fillptr - ln[l]: fillptr] = np.sum(lasterror, axis=0)
+            fillptr -= ln[l]
+        assert fillptr == 0, 'fillptr should be 0, but is %d' % fillptr
+        g /= len(ans)
         return g
 
     def train(self, inp, ans, gtol=1e-5):
-        if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
+        if not (isinstance(inp, np.ndarray) and isinstance(ans, np.ndarray)):
             raise TypeError(str(type(inp)), str(type(ans)))
-        if not (len(inp.shape) == 2 and len(ans.shape) == 2 and len(inp) == len(ans) and len(inp[0]) == self.layernum[0] and len(ans[0]) == self.layernum[-1]):
-            raise ValueError((len(inp.shape) == 2, len(ans.shape) == 2, len(inp) == len(ans), len(inp[0]) == self.layernum[0], len(ans[0]) == self.layernum[-1]))
+        if not len(inp.shape) == 2:
+            raise ValueError('input is not 2d')
+        if not len(ans.shape) == 2:
+            raise ValueError('answer is not 2d')
+        if not len(inp) == len(ans):
+            raise ValueError('different number of input and answer')
+        if not len(inp[0]) == self.layernum[0]:
+            raise ValueError('single input\'s size doesn\'t match with input unit number')
+        if not len(ans[0]) == self.layernum[-1]:
+            raise ValueError('single output\'s size doesn\'t match with output unit number')
         self.fpcache_enabled = True
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -162,5 +156,6 @@ class ann(object):
                               method='BFGS',
                               options={'gtol': gtol})
         self.fpcache_enabled = False
+        self.fpcache = None
         self.theta = minres.x
         return minres

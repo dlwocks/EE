@@ -4,7 +4,7 @@ The base of ann_ai and logreg_ai
 from numpy import array
 
 import features as ft
-from ttthelper import gen_piece
+from ttthelper import gen_piece, flatten
 
 '''
 Use of:     Value Network   Policy Network  Tree Search
@@ -38,7 +38,7 @@ class base_ai(object):
         return sum([self.FEATURE_NUM_MAP[f] for f in self.feature])
 
     def featureize_in_piece(self, board):
-        piece = gen_piece(list(array(board).flatten()))
+        piece = gen_piece(board)
         data = []
         for p in piece:
             temp = []
@@ -50,5 +50,5 @@ class base_ai(object):
     def featureize_final(self, board):
         ret = []
         for f in self.feature:
-            ret.extend(self.FEATURE_FUNC_MAP[f](list(array(board).flatten())))
+            ret.extend(self.FEATURE_FUNC_MAP[f](flatten(board)))
         return array(ret)

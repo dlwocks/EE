@@ -74,7 +74,7 @@ def _fork_opponent(board, ainum, turn, r):
     return oppofork[0]
 
 
-def algorithm_wiki(board, ainum, turn, rndfrombest=False):
+def alg_wiki(board, ainum, turn, rndfrombest=False):
     '''
     Intended to follow Newell and Simon's 1972 tic-tac-toe program's algorithm
     as shown in wikipedia.

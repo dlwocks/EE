@@ -3,10 +3,11 @@ Miscellaneous functions and classes related to machine learning.
 
 For ANN, the one in cythonann.pyx is faster than the one here.
 '''
-from numpy import array, dot, log, ndarray, append, sqrt, array_equal, zeros_like, isclose, split, squeeze
+from numpy import array, dot, log, ndarray, append, sqrt, array_equal, zeros_like, isclose, split, squeeze, empty, empty_like
+import numpy as np
 from random import uniform
 from copy import copy
-from itertools import count
+from itertools import count, accumulate
 from scipy.optimize import minimize
 from scipy.special import expit as sigmoid
 import warnings
@@ -17,6 +18,7 @@ Important definition:
 that it is for first node in FORMER layer
 '''
 
+INT = "__import__('code').interact(local=locals())"
 
 def costfunc(theta, data, ans):
     sig = sigmoid(dot(data, theta))
@@ -84,7 +86,9 @@ class ann(object):
         self.partialthetalen = _thetalen(layernum)
         self.totalthetalen = self.partialthetalen[-1]
         self.layernum = layernum
+        self.unitnum = sum(layernum)
         self.layercount = len(layernum)
+        self.cumlayernum = [0] + list(accumulate(layernum))[:-1]
         if theta is not None:
             if not isinstance(theta, ndarray):
                 raise TypeError(
@@ -96,86 +100,102 @@ class ann(object):
             self.theta = theta
         else:
             self.theta = _rndinit(layernum)
-            # self.theta = array([0 for i in range(self.totalthetalen)])
         self.fpcache_enabled = False
         self.fpcache_theta = None
         self.fpcache = None
 
-    #@profile
     def fowardprop(self, allinp, theta=None):
-        if self.fpcache_enabled and self.fpcache and array_equal(self.fpcache_theta, theta):
+        if self.fpcache_enabled and self.fpcache is not None and array_equal(self.fpcache_theta, theta):
             return self.fpcache
         if theta is None:
             theta = self.theta
         if not isinstance(allinp, ndarray):
             raise TypeError('input is not a ndarray')
-        a = []
-        for inp in allinp:
-            temp_a = []
-            if len(inp) != self.layernum[0]:
-                raise RuntimeError('input size doesn\'t match. length of input is %d, while it should be %d' % (len(inp), self.layernum[0]))
-            for l in range(self.layercount - 1):
-                temp_a.append(inp)  # Append bias UNADDED layer to temp_a
-                start, end = self.partialthetalen[l], self.partialthetalen[l+1]
-                bias = theta[start:start+self.layernum[l+1]]
-                thetaseg = theta[start+self.layernum[l+1]: end]
-                inp = sigmoid(dot(inp, thetaseg.reshape(self.layernum[l], self.layernum[l+1])) + bias)
-            temp_a.append(inp)
-            a.append(temp_a)
+        a = empty((len(allinp), self.unitnum))
+        for l in range(self.layercount - 1):
+            a[:,self.cumlayernum[l]:self.cumlayernum[l+1]] = allinp
+            start, end = self.partialthetalen[l], self.partialthetalen[l+1]
+            bias = theta[start:start+self.layernum[l+1]]
+            thetaseg = theta[start+self.layernum[l+1]: end].reshape(self.layernum[l], self.layernum[l+1])
+            allinp = sigmoid(dot(allinp, thetaseg) + bias)
+        a[:,self.cumlayernum[-1]:] = allinp
         if self.fpcache_enabled:
-            self.fpcache_theta = copy(theta)
+            self.fpcache_theta = theta.copy()
             self.fpcache = a
         return a
 
     def get(self, inp):
-        return self.fowardprop(array([inp]))[0][-1]  # [0]: first inp's output(while there's only one)
+        return self.fowardprop(array([inp]))[0, self.cumlayernum[-1]:]  # [0]: first inp's output(while there's only one for .get)
 
-    #@profile
     def costfunc(self, theta, inp, ans):
-        out = array([d[-1] for d in self.fowardprop(inp, theta)])
-        totalcost = 0
-        for tout, tans in zip(out, ans):
-            totalcost += sum(tans * -log(tout) - (1 - tans) * log(1 - tout))
-        return totalcost
+        out = self.fowardprop(inp, theta)[:, self.cumlayernum[-1]:]
+        return (ans * -log(out) - (1 - ans) * log(1 - out)).sum()
 
-    #@profile
     def gradient_single(self, theta, a, ans):
-        lasterror = a[-1] - ans
-        delta = list(lasterror) + list((a[-2][None].T * lasterror[None]).flatten())
+        fillptr = self.totalthetalen
+        ln = self.layernum
+        delta = empty_like(theta)
+        lasterror = a[self.cumlayernum[-1]:] - ans
+        delta[fillptr - ln[-2] * ln[-1]: fillptr] = (a[self.cumlayernum[-2]:self.cumlayernum[-1]][None].T * lasterror[None]).flatten()
+        fillptr -= ln[-2] * ln[-1]
+        delta[fillptr - ln[-1]: fillptr] = lasterror
+        fillptr -= ln[-1]
         for i in range(self.layercount - 2, 0, -1):
             start, end = self.partialthetalen[i], self.partialthetalen[i+1]
             thetaseg = theta[start+self.layernum[i+1]: end].reshape(
                 self.layernum[i], self.layernum[i+1])
             d = dot(thetaseg, lasterror)
-            agrad = a[i] * (1 - a[i])
+            aseg = a[self.cumlayernum[i]: self.cumlayernum[i+1]]
+            agrad = aseg * (1 - aseg)
             lasterror = d * agrad  # This is in fact this(ith) layer's error; below same.
-            subdelta = list(lasterror) + list((a[i-1][None].T * lasterror[None]).flatten())
-            delta = subdelta + delta
-        return array(delta)
+            delta[fillptr - ln[i-1] * ln[i]: fillptr] = (a[self.cumlayernum[i-1]: self.cumlayernum[i]][None].T * lasterror[None]).flatten()
+            fillptr -= ln[i-1] * ln[i]
+            delta[fillptr - ln[i]: fillptr] = lasterror
+            fillptr -= ln[i]
+        assert fillptr == 0, 'fillptr should be 0, but is %d' % fillptr
+        return delta
 
-    #@profile
     def gradient(self, theta, inp, ans):
-        PARALLEL = True   # Parallel learning shows better convergence.
-        if PARALLEL:
-            a = self.fowardprop(inp, theta)
-            g = zeros_like(theta)
-            for thisa, thisans in zip(a, ans):
-                g += self.gradient_single(theta, thisa, thisans)
-            g /= len(ans)
-        else:  # Series Delta
-            init_theta = copy(theta)
-            for thisinp, thisans in zip(inp, ans):
-                grad = self.gradient_single(theta, thisinp, thisans) / len(ans)
-                theta = theta + grad
-            g = theta - init_theta
+        a = self.fowardprop(inp, theta)
+        g = zeros_like(theta)
+        ln = self.layernum
+        cln = self.cumlayernum
+        fillptr = self.totalthetalen
+        lasterror = a[:, self.cumlayernum[-1]:] - ans
+        for i, thisa in enumerate(a):
+            g[fillptr - ln[-2] * ln[-1]: fillptr] += (thisa[cln[-2]:cln[-1]][None].T * lasterror[i][None]).flatten()
+        fillptr -= ln[-2] * ln[-1]
+        g[fillptr - ln[-1]: fillptr] = np.sum(lasterror, axis=0)
+        fillptr -= ln[-1]
+        for l in range(self.layercount - 2, 0, -1):
+            start, end = self.partialthetalen[l], self.partialthetalen[l+1]
+            thetaseg = theta[start+ln[l+1]: end].reshape(ln[l], ln[l+1])
+            d = np.inner(lasterror, thetaseg)
+            aseg = a[:,self.cumlayernum[l]: self.cumlayernum[l+1]]
+            agrad = aseg * (1 - aseg)
+            lasterror = d * agrad
+            for i, thisa in enumerate(a):
+                g[fillptr - ln[l-1] * ln[l]: fillptr] += (thisa[cln[l-1]: cln[l]][None].T * lasterror[i][None]).flatten()
+            fillptr -= ln[l-1] * ln[l]
+            g[fillptr - ln[l]: fillptr] = np.sum(lasterror, axis=0)
+            fillptr -= ln[l]
+        assert fillptr == 0, 'fillptr should be 0, but is %d' % fillptr
+        g /= len(ans)
         return g
 
-    #@profile
     def train(self, inp, ans, gtol=1e-5):
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
             raise TypeError(str(type(inp)), str(type(ans)))
-        if not (len(inp.shape) == 2 and len(ans.shape) == 2 and len(inp) == len(ans) and len(inp[0]) == self.layernum[0] and len(ans[0]) == self.layernum[-1]):
-            raise ValueError((len(inp.shape) == 2, len(ans.shape) == 2, len(inp) == len(ans), len(inp[0]) == self.layernum[0], len(ans[0]) == self.layernum[-1]))
+        if not len(inp.shape) == 2:
+            raise ValueError('input is not 2d')
+        if not len(ans.shape) == 2:
+            raise ValueError('answer is not 2d')
+        if not len(inp) == len(ans):
+            raise ValueError('different number of input and answer')
+        if not len(inp[0]) == self.layernum[0]:
+            raise ValueError('single input\'s size doesn\'t match with input unit number')
+        if not len(ans[0]) == self.layernum[-1]:
+            raise ValueError('single output\'s size doesn\'t match with output unit number')
         self.fpcache_enabled = True
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -186,8 +206,10 @@ class ann(object):
                               method='BFGS',
                               options={'gtol': gtol})
         self.fpcache_enabled = False
+        self.fpcache = None
         self.theta = minres.x
         return minres
+
 
 
 def loaddata(setname):
