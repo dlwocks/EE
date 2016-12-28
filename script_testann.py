@@ -20,7 +20,6 @@ a.train(inp, ans)
 timeit(code,setup=setup, number=100)
 
 # Commit 177557785f620ef51d7671e9434d5af6d63ed999: cythonann takes 20.s
-# Commit :cythonann takes 9.9s
 
 
 ####################################################################################
