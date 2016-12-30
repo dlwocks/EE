@@ -1,7 +1,5 @@
 '''
 Miscellaneous functions and classes related to machine learning.
-
-For ANN, the one in cythonann.pyx is faster than the one here.
 '''
 from numpy import array, dot, log, ndarray, append, sqrt, array_equal, zeros_like, isclose, split, squeeze, empty, empty_like
 import numpy as np
@@ -20,11 +18,12 @@ that it is for first node in FORMER layer
 
 INT = "__import__('code').interact(local=locals())"
 
+#@profile
 def costfunc(theta, data, ans):
     sig = sigmoid(dot(data, theta))
     return sum(ans * -log(sig) - (1 - ans) * log(1 - sig))
 
-
+#@profile
 def costfunc_d(theta, data, ans):
     return dot(data.T, (sigmoid(dot(data, theta)) - ans)) / len(theta)
 
@@ -104,6 +103,7 @@ class ann(object):
         self.fpcache_theta = None
         self.fpcache = None
 
+    #@profile
     def fowardprop(self, allinp, theta=None):
         if self.fpcache_enabled and self.fpcache is not None and array_equal(self.fpcache_theta, theta):
             return self.fpcache
@@ -124,37 +124,17 @@ class ann(object):
             self.fpcache = a
         return a
 
+    #@profile
     def get(self, inp):
         return self.fowardprop(array([inp]))[0, self.cumlayernum[-1]:]  # [0]: first inp's output(while there's only one for .get)
 
+    #@profile
     def costfunc(self, theta, inp, ans):
+        print('costfun')
         out = self.fowardprop(inp, theta)[:, self.cumlayernum[-1]:]
         return (ans * -log(out) - (1 - ans) * log(1 - out)).sum()
 
-    def gradient_single(self, theta, a, ans):
-        fillptr = self.totalthetalen
-        ln = self.layernum
-        delta = empty_like(theta)
-        lasterror = a[self.cumlayernum[-1]:] - ans
-        delta[fillptr - ln[-2] * ln[-1]: fillptr] = (a[self.cumlayernum[-2]:self.cumlayernum[-1]][None].T * lasterror[None]).flatten()
-        fillptr -= ln[-2] * ln[-1]
-        delta[fillptr - ln[-1]: fillptr] = lasterror
-        fillptr -= ln[-1]
-        for i in range(self.layercount - 2, 0, -1):
-            start, end = self.partialthetalen[i], self.partialthetalen[i+1]
-            thetaseg = theta[start+self.layernum[i+1]: end].reshape(
-                self.layernum[i], self.layernum[i+1])
-            d = dot(thetaseg, lasterror)
-            aseg = a[self.cumlayernum[i]: self.cumlayernum[i+1]]
-            agrad = aseg * (1 - aseg)
-            lasterror = d * agrad  # This is in fact this(ith) layer's error; below same.
-            delta[fillptr - ln[i-1] * ln[i]: fillptr] = (a[self.cumlayernum[i-1]: self.cumlayernum[i]][None].T * lasterror[None]).flatten()
-            fillptr -= ln[i-1] * ln[i]
-            delta[fillptr - ln[i]: fillptr] = lasterror
-            fillptr -= ln[i]
-        assert fillptr == 0, 'fillptr should be 0, but is %d' % fillptr
-        return delta
-
+    #@profile
     def gradient(self, theta, inp, ans):
         a = self.fowardprop(inp, theta)
         g = zeros_like(theta)
@@ -162,8 +142,7 @@ class ann(object):
         cln = self.cumlayernum
         fillptr = self.totalthetalen
         lasterror = a[:, self.cumlayernum[-1]:] - ans
-        for i, thisa in enumerate(a):
-            g[fillptr - ln[-2] * ln[-1]: fillptr] += (thisa[cln[-2]:cln[-1]][None].T * lasterror[i][None]).flatten()
+        g[fillptr - ln[-2] * ln[-1]: fillptr] = np.inner(a[:, cln[-2]:cln[-1]].T, lasterror.T).flatten()
         fillptr -= ln[-2] * ln[-1]
         g[fillptr - ln[-1]: fillptr] = np.sum(lasterror, axis=0)
         fillptr -= ln[-1]
@@ -174,8 +153,7 @@ class ann(object):
             aseg = a[:,self.cumlayernum[l]: self.cumlayernum[l+1]]
             agrad = aseg * (1 - aseg)
             lasterror = d * agrad
-            for i, thisa in enumerate(a):
-                g[fillptr - ln[l-1] * ln[l]: fillptr] += (thisa[cln[l-1]: cln[l]][None].T * lasterror[i][None]).flatten()
+            g[fillptr - ln[l-1] * ln[l]: fillptr] = np.inner(a[:, cln[l-1]: cln[l]].T, lasterror.T).flatten()
             fillptr -= ln[l-1] * ln[l]
             g[fillptr - ln[l]: fillptr] = np.sum(lasterror, axis=0)
             fillptr -= ln[l]
@@ -183,6 +161,7 @@ class ann(object):
         g /= len(ans)
         return g
 
+    #@profile
     def train(self, inp, ans, gtol=1e-5):
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
             raise TypeError(str(type(inp)), str(type(ans)))
