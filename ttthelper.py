@@ -104,7 +104,7 @@ def flatten(board):
     return board[0] + board[1] + board[2]
 
 
-@profile
+
 def gamegen(gamenum, algs=[randomstep] * 2, args=()):
     '''
     Generate dataset played with algorithm alg.

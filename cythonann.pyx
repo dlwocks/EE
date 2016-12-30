@@ -112,8 +112,7 @@ class ann(object):
         cln = self.cumlayernum
         fillptr = self.totalthetalen
         lasterror = a[:, self.cumlayernum[-1]:] - ans
-        for i in range(len(a)):
-            g[fillptr - ln[-2] * ln[-1]: fillptr] += (a[i][cln[-2]:cln[-1]][None].T * lasterror[i][None]).flatten()
+        g[fillptr - ln[-2] * ln[-1]: fillptr] = np.inner(a[:, cln[-2]:cln[-1]].T, lasterror.T).flatten()
         fillptr -= ln[-2] * ln[-1]
         g[fillptr - ln[-1]: fillptr] = np.sum(lasterror, axis=0)
         fillptr -= ln[-1]
@@ -124,8 +123,7 @@ class ann(object):
             aseg = a[:,self.cumlayernum[l]: self.cumlayernum[l+1]]
             agrad = aseg * (1 - aseg)
             lasterror = d * agrad
-            for i in range(len(a)):
-                g[fillptr - ln[l-1] * ln[l]: fillptr] += (a[i][cln[l-1]: cln[l]][None].T * lasterror[i][None]).flatten()
+            g[fillptr - ln[l-1] * ln[l]: fillptr] = np.inner(a[:, cln[l-1]: cln[l]].T, lasterror.T).flatten()
             fillptr -= ln[l-1] * ln[l]
             g[fillptr - ln[l]: fillptr] = np.sum(lasterror, axis=0)
             fillptr -= ln[l]

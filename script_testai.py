@@ -1,15 +1,12 @@
 '''
-A myth to resolve:
-Why logreg_like ann is so slow compared to logreg??
-
-
 Researches can be done:
 1.Incresing hidden unit           val_hidden = [...]
-2.feeding better features         gamegen(num = ...)
-3.feeding more features           gamegen(alg = [...])
-4.feeding better data             ann_ai(features = ...)
-5.feeding more data               features.py ...
+2.feeding better features         addi in features.py
+3.feeding more features           ann_ai(features=...)
+4.feeding better data             gamegen(alg = ...)
+5.feeding more data               gamegen(num = ...)
 6.use/mix poilcy&value network    pol_hidden = []; if self.USE_VAL and self.USE_POL: ...
+7.Use regularization
 '''
 def script_lr(num=100):
     # Test a logreg_ai
@@ -86,11 +83,9 @@ def alg_timer(alg):
     return time / timedcount / NUM
 
 
-
-
-
-
-def script_ann():
+def script_ann(val_hidden):  # r1
     from ann_ai import ann_ai
     import ttttester
     import ttthelper
+    ai = ann_ai(val_hidden=val_hidden)
+    

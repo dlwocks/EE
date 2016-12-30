@@ -1,4 +1,4 @@
-
+@profile
 def test(num):
     # Test a logreg_ai
     from logreg_ai import logreg_ai

@@ -35,7 +35,7 @@ class logreg_ai(base_ai):
         self.data.extend(feature)
         self.ans.extend([end] * len(feature))
 
-    
+    @profile
     def _train_value(self, board, end):
         assert end in [1, 0, 0.5]
         self._add(board, end)
@@ -43,7 +43,7 @@ class logreg_ai(base_ai):
             warnings.simplefilter("ignore")
             self.theta_value = minimize(costfunc, self.theta_value, args=(array(self.data), array(self.ans)), jac=costfunc_d, method='BFGS').x
 
-    
+    @profile
     def getstep(self, board, ainum, step):
         mi, mj, mdot = 0, 0, -10000 if ainum % 2 else 10000
         for nextboard, i, j in emptyspace_pos(board, step):
@@ -80,7 +80,7 @@ class logreg_ai(base_ai):
         else:
             return largest
 
-    
+    @profile
     def startlearn(self, game='converge', difftol=0.01, opponent='random', graph=True, pt=True):
         if opponent not in ['self', 'random']:
             raise ValueError('param opponent is not self or random.')
