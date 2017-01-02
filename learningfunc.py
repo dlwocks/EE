@@ -18,12 +18,12 @@ that it is for first node in FORMER layer
 
 INT = "__import__('code').interact(local=locals())"
 
-#@profile
+@profile
 def costfunc(theta, data, ans):
     sig = sigmoid(dot(data, theta))
     return sum(ans * -log(sig) - (1 - ans) * log(1 - sig))
 
-#@profile
+@profile
 def costfunc_d(theta, data, ans):
     return dot(data.T, (sigmoid(dot(data, theta)) - ans)) / len(theta)
 
@@ -99,14 +99,9 @@ class ann(object):
             self.theta = theta
         else:
             self.theta = _rndinit(layernum)
-        self.fpcache_enabled = False
-        self.fpcache_theta = None
-        self.fpcache = None
 
-    #@profile
+    @profile
     def fowardprop(self, allinp, theta=None):
-        if self.fpcache_enabled and self.fpcache is not None and array_equal(self.fpcache_theta, theta):
-            return self.fpcache
         if theta is None:
             theta = self.theta
         if not isinstance(allinp, ndarray):
@@ -119,24 +114,17 @@ class ann(object):
             thetaseg = theta[start+self.layernum[l+1]: end].reshape(self.layernum[l], self.layernum[l+1])
             allinp = sigmoid(dot(allinp, thetaseg) + bias)
         a[:,self.cumlayernum[-1]:] = allinp
-        if self.fpcache_enabled:
-            self.fpcache_theta = theta.copy()
-            self.fpcache = a
         return a
 
-    #@profile
+    @profile
     def get(self, inp):
         return self.fowardprop(array([inp]))[0, self.cumlayernum[-1]:]  # [0]: first inp's output(while there's only one for .get)
 
-    #@profile
-    def costfunc(self, theta, inp, ans):
-        print('costfun')
-        out = self.fowardprop(inp, theta)[:, self.cumlayernum[-1]:]
-        return (ans * -log(out) - (1 - ans) * log(1 - out)).sum()
-
-    #@profile
-    def gradient(self, theta, inp, ans):
-        a = self.fowardprop(inp, theta)
+    @profile
+    def cost_and_gradient(self, theta, inp, ans):
+        a = self.fowardprop(inp, theta)  # stands for activations
+        out = a[:, self.cumlayernum[-1]:]
+        cost = (ans * -log(out) - (1 - ans) * log(1 - out)).sum()
         g = zeros_like(theta)
         ln = self.layernum
         cln = self.cumlayernum
@@ -159,9 +147,9 @@ class ann(object):
             fillptr -= ln[l]
         assert fillptr == 0, 'fillptr should be 0, but is %d' % fillptr
         g /= len(ans)
-        return g
+        return cost, g
 
-    #@profile
+    @profile
     def train(self, inp, ans, gtol=1e-5):
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
             raise TypeError(str(type(inp)), str(type(ans)))
@@ -178,10 +166,10 @@ class ann(object):
         self.fpcache_enabled = True
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            minres = minimize(self.costfunc,
+            minres = minimize(self.cost_and_gradient,
                               self.theta,
                               args=(inp, ans),
-                              jac=self.gradient,
+                              jac=True,
                               method='BFGS',
                               options={'gtol': gtol})
         self.fpcache_enabled = False
