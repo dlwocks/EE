@@ -20,7 +20,7 @@ Policy Network Training using perfectdataset
 
 INT = "__import__('code').interact(local=locals())"
 class ann_ai(base_ai):
-    def __init__(self, val_hidden=None, pol_hidden=None, feature=['board'], cython=True):
+    def __init__(self, val_hidden=None, pol_hidden=None, feature=['board'], cython=False):
         if val_hidden is None and pol_hidden is None:
             raise ValueError('No ANN is used') 
         self.USE_VAL = False if val_hidden is None else True
@@ -41,7 +41,7 @@ class ann_ai(base_ai):
         else:
             raise NotImplementedError
 
-    @profile
+    #@profile
     def getstep(self, board, ainum, step):
         if self.USE_VAL and self.USE_POL:
             raise NotImplementedError
@@ -67,21 +67,30 @@ class ann_ai(base_ai):
                     maxindex = i
             return maxindex // 3, maxindex % 3
 
-    @profile
-    def dataset_to_2darr(self, dataset):
+    #@profile
+    def dataset_featureize(self, dataset):
         data, ans = dataset
         data = array([self.featureize_final(d) for d in data])
         ans = array([[a] for a in ans])
         return data, ans
 
-    @profile
-    def train(self, dataset=None, pt=True, pt_option='all', gtol=1e-5):
+    def getcost(self, dataset):
+        if self.USE_VAL and self.USE_POL:
+            raise NotImplementedError
+        elif self.USE_VAL:
+            data, ans = self.dataset_featureize(dataset)
+            return self.val_ann.costfunc(data, ans)
+        elif self.USE_POL:
+            raise NotImplementedError
+
+    #@profile
+    def train(self, dataset=None, pt=False, pt_option='all', gtol=1e-5):
         if self.USE_VAL and self.USE_POL:
             raise NotImplementedError
         elif self.USE_VAL:
             if dataset is None:
                 dataset = helper.gamegen(gamenum=1000)
-            data, ans = self.dataset_to_2darr(dataset)
+            data, ans = self.dataset_featureize(dataset)
             minres = self.val_ann.train(data, ans, gtol)
             if pt:
                 available_option = ['fun', 'hess_inv', 'jac', 'message', 'nfev', 'nit', 'njev', 'status', 'success', 'x']
@@ -91,17 +100,9 @@ class ann_ai(base_ai):
                     for o in available_option:
                         if o in pt_option:
                             print('    %s:' % o, eval('minres.' + o))
+            return minres
         elif self.USE_POL:
             if dataset is None:
                 raise ValueError
             data, ans = dataset
             minres = self.pol_ann.train(data, ans, gtol)
-
-
-if __name__ == '__main__':
-    a = ann_ai(val_hidden=[])
-    dataset = helper.gamegen(100)
-    a.train(dataset=(data, ans))
-    import ttttester
-    ttttester.complete_check(a.getstep, pt=True)
-    __import__('code').interact(local=locals())

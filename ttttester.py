@@ -17,7 +17,7 @@ from numpy import array
 from copy import copy, deepcopy
 from random import randint
 
-from ai import alg_wiki
+from ai import perfectalg
 from ttthelper import isend, printboard
 
 global count
@@ -86,7 +86,7 @@ def _complete_check(algorithm, board=None, step=1, ainum=2):
     board[i][j] = 0
 
 
-def complete_check(algorithm=alg_wiki, pt=False):
+def complete_check(algorithm=perfectalg, pt=False):
     global count
     count = {'AI': 0, 'Iterator': 0, 'Draw': 0}
     _complete_check(algorithm, ainum=1)
@@ -95,10 +95,11 @@ def complete_check(algorithm=alg_wiki, pt=False):
     board = [[0 for i in range(3)] for j in range(3)]
     for subboard in emptyspace(board, 1):
         _complete_check(algorithm, subboard, 2)
+    aep = (count['AI'] * 2 + count['Draw']) / sum(count.values()) * 50
     if pt:
         print('Total:%s' % str(count))
-        print('Algorithm Evaluation Point:%0.2f' % ((count['AI'] * 2 + count['Draw'])/sum(count.values())))
-    return (count['AI'] * 2 + count['Draw'])/sum(count.values())
+        print('Algorithm Evaluation Point:%0.2f' % aep)
+    return round(aep, 2)
 
 
 def _board(board):
@@ -110,7 +111,7 @@ def play_with(algorithm, playerfirst=True):
     ainum = 2 if playerfirst else 1
     end = 0
     step = 1
-    while not end and step < 10:
+    while step < 10:
         print(printboard(_board(board)))
         if step % 2 == ainum % 2:
             i, j = algorithm(board, ainum, step)
@@ -133,6 +134,14 @@ def play_with(algorithm, playerfirst=True):
                 print(printboard(_board(board)))
                 break
         step += 1
+
+
+def againstperfect(algorithm, perfectfirst=True):
+    board = [[0 for i in range(3)]for i in range(3)]
+    step = 1
+    end = 0
+    while step < 10:
+        print(printboard(_board(board)))
 
 
 if __name__ == '__main__':

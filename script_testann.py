@@ -17,7 +17,7 @@ code = '''
 a = ann([1, 2, 1])
 a.train(inp, ans)
 '''
-timeit(code,setup=setup, number=1)
+timeit(code,setup=setup, number=10)
 
 # Commit 177557785f620ef51d7671e9434d5af6d63ed999: cythonann takes 20.s
 
@@ -32,26 +32,18 @@ import pyximport
 pyximport.install(setup_args={'include_dirs': np.get_include()})
 from cythonann import ann
 
+from learningfunc import ann
 from numpy import sin, abs, linspace, arange, array
-# Target1
 def target(inp):
-    from numpy import sin, abs
     return abs(sin(inp) /  inp)
 
 inp = linspace(-10, 10, 1000)[None].T
-# Target2
-def target(inp):
-    return sin(inp)
-
-inp = linspace(0.01, 3.14, 300)[None].T
-
-
 ans = target(inp)
 
 a = ann([1, 20, 1])
 minres = a.train(inp, ans)  # This probably needs a few minute
 print('fun:', minres.fun)
-x = linspace(0.01, 3.14, 300)
+x = linspace(-10, 10, 1000)
 import matplotlib.pyplot as plt
 plt.plot(x, target(x))
 plt.plot(x, [a.get(array([i])) for i in x])

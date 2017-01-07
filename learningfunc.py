@@ -18,12 +18,12 @@ that it is for first node in FORMER layer
 
 INT = "__import__('code').interact(local=locals())"
 
-@profile
+#@profile
 def costfunc(theta, data, ans):
     sig = sigmoid(dot(data, theta))
     return sum(ans * -log(sig) - (1 - ans) * log(1 - sig))
 
-@profile
+#@profile
 def costfunc_d(theta, data, ans):
     return dot(data.T, (sigmoid(dot(data, theta)) - ans)) / len(theta)
 
@@ -55,25 +55,8 @@ def _rndinit(layernum):
     return inittheta
 
 
-def gradientcheck(annobject, inp, ans):
-    '''Relative Difference is consistent!'''
-    eps = 1e-10
-    grad = []
-    for i in range(annobject.totalthetalen):
-        annobject.theta[i] += eps
-        cost1 = annobject.costfunc(annobject.theta, inp, ans)
-        annobject.theta[i] -= 2 * eps
-        cost2 = annobject.costfunc(annobject.theta, inp, ans)
-        grad.append((cost1 - cost2) / 2 / eps)
-        annobject.theta[i] += eps
-    gradcalc = a.gradient(a.theta, data, ans)
-    grad = array(grad) / len(inp[0])
-    print('gradient checking', grad)
-    print('calculated gradient', gradcalc)
-    print('adiff', grad - gradcalc)
-    print('rdiff', grad / gradcalc)
-    return isclose(array(grad), gradcalc)
-
+NEAR_ZERO = np.nextafter(0, 1)
+NEAR_ONE = np.nextafter(1, -1)
 
 class ann(object):
     def __init__(self, layernum, theta=None):
@@ -100,7 +83,7 @@ class ann(object):
         else:
             self.theta = _rndinit(layernum)
 
-    @profile
+    #@profile
     def fowardprop(self, allinp, theta=None):
         if theta is None:
             theta = self.theta
@@ -108,22 +91,30 @@ class ann(object):
             raise TypeError('input is not a ndarray')
         a = empty((len(allinp), self.unitnum))
         for l in range(self.layercount - 1):
-            a[:,self.cumlayernum[l]:self.cumlayernum[l+1]] = allinp
+            a[:, self.cumlayernum[l]:self.cumlayernum[l+1]] = allinp
             start, end = self.partialthetalen[l], self.partialthetalen[l+1]
             bias = theta[start:start+self.layernum[l+1]]
             thetaseg = theta[start+self.layernum[l+1]: end].reshape(self.layernum[l], self.layernum[l+1])
             allinp = sigmoid(dot(allinp, thetaseg) + bias)
-        a[:,self.cumlayernum[-1]:] = allinp
+        a[:, self.cumlayernum[-1]:] = allinp
         return a
 
-    @profile
+    #@profile
     def get(self, inp):
         return self.fowardprop(array([inp]))[0, self.cumlayernum[-1]:]  # [0]: first inp's output(while there's only one for .get)
 
-    @profile
+    def costfunc(self, inp, ans):
+        out = self.fowardprop(inp, self.theta)[:, self.cumlayernum[-1]:]
+        np.place(out, out < NEAR_ZERO, NEAR_ZERO)
+        np.place(out, out > NEAR_ONE, NEAR_ONE)  # Avoid overflow in log
+        return (ans * -np.log(out) - (1 - ans) * np.log(1 - out)).sum()
+
+    #@profile
     def cost_and_gradient(self, theta, inp, ans):
         a = self.fowardprop(inp, theta)  # stands for activations
         out = a[:, self.cumlayernum[-1]:]
+        np.place(out, out < NEAR_ZERO, NEAR_ZERO)
+        np.place(out, out > NEAR_ONE, NEAR_ONE)  # Avoid overflow in log
         cost = (ans * -log(out) - (1 - ans) * log(1 - out)).sum()
         g = zeros_like(theta)
         ln = self.layernum
@@ -138,7 +129,7 @@ class ann(object):
             start, end = self.partialthetalen[l], self.partialthetalen[l+1]
             thetaseg = theta[start+ln[l+1]: end].reshape(ln[l], ln[l+1])
             d = np.inner(lasterror, thetaseg)
-            aseg = a[:,self.cumlayernum[l]: self.cumlayernum[l+1]]
+            aseg = a[:, self.cumlayernum[l]: self.cumlayernum[l+1]]
             agrad = aseg * (1 - aseg)
             lasterror = d * agrad
             g[fillptr - ln[l-1] * ln[l]: fillptr] = np.inner(a[:, cln[l-1]: cln[l]].T, lasterror.T).flatten()
@@ -149,7 +140,7 @@ class ann(object):
         g /= len(ans)
         return cost, g
 
-    @profile
+    #@profile
     def train(self, inp, ans, gtol=1e-5):
         if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
             raise TypeError(str(type(inp)), str(type(ans)))
@@ -163,78 +154,10 @@ class ann(object):
             raise ValueError('single input\'s size doesn\'t match with input unit number')
         if not len(ans[0]) == self.layernum[-1]:
             raise ValueError('single output\'s size doesn\'t match with output unit number')
-        self.fpcache_enabled = True
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            minres = minimize(self.cost_and_gradient,
-                              self.theta,
-                              args=(inp, ans),
-                              jac=True,
-                              method='BFGS',
-                              options={'gtol': gtol})
-        self.fpcache_enabled = False
-        self.fpcache = None
-        self.theta = minres.x
+        minres = minimize(self.cost_and_gradient,
+                          self.theta,
+                          args=(inp, ans),
+                          jac=True,
+                          method='BFGS',
+                          options={'gtol': gtol})
         return minres
-
-
-
-def loaddata(setname):
-    SUPPORTED_DATASET = ['and', 'or', 'xor', 'nand', 'nor', 'xnor']
-    if setname not in SUPPORTED_DATASET:
-        raise ValueError('setname is not supported')
-    if setname in ['and', 'or', 'xor', 'nand', 'nor', 'xnor']:
-        data = array([[0, 0], [0, 1], [1, 0], [1, 1]])
-    if setname == 'and':
-        ans = array([[0], [0], [0], [1]])
-    elif setname == 'or':
-        ans = array([[0], [1], [1], [1]])
-    elif setname == 'xor':
-        ans = array([[0], [1], [1], [0]])
-    elif setname == 'nand':
-        ans = array([[1], [1], [1], [0]])
-    elif setname == 'nor':
-        ans = array([[1], [0], [0], [0]])
-    elif setname == 'xnor':
-        ans = array([[1], [0], [0], [1]])
-    return data, ans
-
-
-def handle_args():
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--search', action='store_true', help='Do repetitive search')
-    args = parser.parse_args()
-    return args.search
-
-
-if __name__ == '__main__':
-    search = handle_args()
-    try:
-        ANN_DIMENSION = [2, 2, 1]
-        data, ans = loaddata('xor')
-        if search:
-            minval = 100000
-            minx = None
-            try:
-                for i in count():
-                    a = ann(ANN_DIMENSION)
-                    minres = a.train(data, ans)
-                    if minres.fun < minval:
-                        print('Minimum value found on %dth attempt: %f' % (i + 1, minres.fun))
-                        minval = minres.fun
-                        minx = minres.x
-                    if i % 10 == 0 and i != 0:
-                        print('%d try done..' % (i))
-            except KeyboardInterrupt:
-                print('Search interrupted with %d try(s) and minimum value of %f found.' % (i, minval))
-                if minx is not None:
-                    a.theta = minx
-                    print('Best theta value is plugged into object a.')
-        else:
-            print('Module and data loaded.')
-    except:
-        import traceback
-        traceback.print_exc()
-    finally:
-        __import__('code').interact(local=locals())

@@ -105,7 +105,7 @@ def flatten(board):
 
 
 
-def gamegen(gamenum, algs=[randomstep] * 2, args=()):
+def gamegen(gamenum, algs=[randomstep] * 2, args=(), piece=True):
     '''
     Generate dataset played with algorithm alg.
     Param:
@@ -128,13 +128,18 @@ def gamegen(gamenum, algs=[randomstep] * 2, args=()):
         while not end and step < 10:
             i, j = algs[step % 2](board, (step+1) % 2 + 1, step, *args)
             board[i][j] = step
-            if 9 >= step >= 5:
+            if step >= 5:
                 end = isend(board, step+1)
                 if end is not None:
                     break
+            assert step < 9
             step += 1
-        data.extend(gen_piece(board))
-        ans.extend([end] * step)
+        if piece:
+            data.extend(gen_piece(board))
+            ans.extend([end] * step)
+        else:
+            data.append(flatten(board))
+            ans.append(end)
     return data, ans
 
 
