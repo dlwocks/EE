@@ -158,34 +158,38 @@ I haven't considered to measure the error of ann directly. AEP is not an accurat
 Following script will directly measure the error of ann to **choose the number of hidden layer**.
 It is similar to r3, but use error of ann on **validation set** as measure.
 Value Network specific.
+
+One Result: 14.8?
 '''
-def r4(ini=0, step=1, num=20):
+def r4(ini=0, step=1, num=6):
     t = timer()
-    if ini == 0:
-        hiddenslist = [[]] + [[ini + step * i] for i in range(1, num)]
-    elif ini > 0:
-        hiddenslist = [[ini + step * i] for i in range(num)]
+    hiddenslist = [ini + step * i for i in range(num)]
     trainerrs = [[] for i in range(num)]
     validateerrs = [[] for i in range(num)]
+    trainnum = 1000
     while True:
         try:
             with t:
-                trainnum = 1000
                 trainset = ttthelper.gamegen(trainnum, algs=[ttthelper.randomstep] * 2)
                 validateset = ttthelper.gamegen(trainnum//4, algs=[ttthelper.randomstep] * 2)
                 for i, hidden in enumerate(hiddenslist):
                     ai = ann_ai.ann_ai(val_hidden=hidden, pol_hidden=None, feature=['board'])
                     minres = ai.train(trainset, pt=False)
+                    interact(local=locals())
                     trainerrs[i].append(minres.fun)
                     validateerrs[i].append(ai.getcost(validateset))
-            print('Single: %s   Acc: %s   Num: %s' % (t.time, t.acc, t.num))
+            print('Single: %s  Acc: %s  Num: %s' % (t.time, t.acc, t.num))
         except KeyboardInterrupt:
             break
-    trainerrmean = [mean(thiserr, ignorelarge=1)/4 for thiserr in trainerrs]
-    validateerrmean = [mean(thiserr, ignorelarge=1) for thiserr in validateerrs]
-    p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
-    p2 = plt.plot([ini + step * i for i in range(num)], validateerrmean)
+    trainerrmean = [mean(thiserr)/4 for thiserr in trainerrs]
+    validateerrmean = [mean(thiserr) for thiserr in validateerrs]
+    p1 = plt.plot(hiddenslist, trainerrmean)
+    p2 = plt.plot(hiddenslist, validateerrmean)
     plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
+    coefs = np.polyfit([ini + step * i for i in range(num)], validateerrmean, 2)
+    def poly(a, b, c, x):
+        return a*(x**2) + b*x + c
+    plt.plot(hiddenslist, [poly(*coefs, i) for i in hiddenslist])
     plt.show()
     interact(local=locals())
 
@@ -212,7 +216,7 @@ def r5(ini=1000, step=1000, num=10):
                     minres = ai.train(trainset, pt=False)
                     trainerrs[i].append(minres.fun / gamenumlist[i] * ini / 2)  # 2 as from gamegen(ini//`2`)
                     validateerrs[i].append(ai.getcost(validateset))
-             print('Single: %s   Acc: %s   Num: %s' % (t.time, t.acc, t.num))
+            print('Single: %s   Acc: %s   Num: %s' % (t.time, t.acc, t.num))
         except KeyboardInterrupt:
             break
     trainerrmean = [mean(thiserr, ignorelarge=1) for thiserr in trainerrs]

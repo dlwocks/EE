@@ -17,8 +17,6 @@ TODO:
 Reinforcement learning using trained value network
 Policy Network Training using perfectdataset
 '''
-
-INT = "__import__('code').interact(local=locals())"
 class ann_ai(base_ai):
     def __init__(self, val_hidden=None, pol_hidden=None, feature=['board'], cython=False):
         if val_hidden is None and pol_hidden is None:
@@ -27,6 +25,11 @@ class ann_ai(base_ai):
         self.USE_POL = False if pol_hidden is None else True
         self.feature = feature
         if self.USE_VAL:
+            if isinstance(val_hidden, int):
+                val_hidden = [val_hidden]
+            for i, o in enumerate(val_hidden):
+                if o == 0:
+                    del val_hidden[i]
             val_layernum = [self.feature_num] + ([] if val_hidden is None else val_hidden) + [1]
             if cython:
                 self.val_ann = cythonann.ann(val_layernum)
