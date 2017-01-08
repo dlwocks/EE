@@ -61,7 +61,7 @@ NEAR_ONE = np.nextafter(1, -1)
 class ann(object):
     def __init__(self, layernum, theta=None):
         if not isinstance(layernum, list):
-            raise TypeError('param layernum is not list')
+            raise TypeError('param layernum is not list or integer')
         if len(layernum) < 2:
             raise ValueError('param layernum is too small.'
                              'It should at least consist input/output layer')
@@ -160,4 +160,5 @@ class ann(object):
                           jac=True,
                           method='BFGS',
                           options={'gtol': gtol})
+        self.theta = minres.x
         return minres
