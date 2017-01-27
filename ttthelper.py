@@ -1,23 +1,10 @@
 from itertools import product
+from ai import perfectalg
 import random
 from numpy import array
-
-
-INT = "__import__('code').interact(local=locals())"
-
-
-def _row_gen(board):
-    '''
-    There are 8 ways to end a tic-tac-toe:
-    horiziontal 3, vertical 3, diagonal 2.
-    This generates every condition.
-    '''
-    for i in range(3):
-        yield [board[i][0], board[i][1], board[i][2]]
-        yield [board[0][i], board[1][i], board[2][i]]
-    yield [board[0][0], board[1][1], board[2][2]]
-    yield [board[0][2], board[1][1], board[2][0]]
-
+from code import interact
+from random import randint, shuffle
+from tttbase import isend, flatten, deflatten
 
 def printboard(board, signmap={0: "+", 1: "O", 2: "X"}, hspace='-'):
     '''
@@ -29,49 +16,6 @@ def printboard(board, signmap={0: "+", 1: "O", 2: "X"}, hspace='-'):
         ret += '\n' if x == len(board[0])-1 else hspace
     return ret
 
-
-def _isend(nums):
-    """
-    Return 1 if the odd player wins by this set.
-    Return 2 if the even player wins by this set.
-    Return 0 elsewise.
-    """
-    if not all(nums):
-        return None
-    if nums[0] % 2 == nums[1] % 2 == nums[2] % 2:
-        return 1 if nums[0] % 2 else 0
-    return None
-
-
-def isend(board, nx=None):
-    """
-    Determine Whether a game has ended in a specific ttt board.
-    Make sure that the board is produced in ttt play following rule. 
-    i.e. if the board has both odd and even player winning, it will only return the first detected winning.
-    Param:
-        board: 2d.
-        nx: number for next step. Optional - speed up progress.
-    Returned:
-        Return 1 if the odd player wins the game.
-        Return 0 if the even player wins the game.
-        Return 0.5 if the game ended in draw.
-        Return None if the game hasn't ended.
-    """
-    if nx == 10:
-        return 0.5  # Next step is 10, thus draw
-    for end in map(_isend, _row_gen(board)):
-        if end is not None:
-            return end
-    if nx is not None:
-        return None  # nx should be smaller than 10, but no row ends the game, so the game continues
-    else:  # nx is unknown, need to check whether game is ended
-        for i in range(3):
-            for j in range(3):
-                if board[i][j] == 0:
-                    return None
-        return 0.5
-
-
 def emptyspace_pos(board, step):
     for i in range(3):
         for j in range(3):
@@ -82,27 +26,13 @@ def emptyspace_pos(board, step):
 
 
 def randomstep(board, _=None, __=None):
-    moves = [(i,j) for i in range(3) for j in range(3)]
+    moves = [(i, j) for i in range(3) for j in range(3)]
     random.shuffle(moves)
     while moves:
         i, j = moves.pop()
         if board[i][j] == 0:
             return i, j
     raise RuntimeError('The board passed to randomstep is full')
-
-
-def flatten(board):
-    '''
-    input: [[1,2,3],[4,5,6],[7,8,9]]
-    output: [1,2,3,4,5,6,7,8,9]
-    '''
-    if isinstance(board[0], int):
-        if len(board) == 9:
-            return board  # Already flattened
-        else:
-            raise ValueError('are you sure this is a board?')
-    return board[0] + board[1] + board[2]
-
 
 
 def gamegen(gamenum, algs=[randomstep] * 2, args=(), piece=True):
@@ -115,10 +45,10 @@ def gamegen(gamenum, algs=[randomstep] * 2, args=(), piece=True):
 
     Returned:
         data(2d list): list of boards
-        ans(1d list): The final result of corresponding board 
+        ans(1d list): The final result of corresponding board
     '''
-    if not isinstance(algs, list) or len(algs) != 2:
-        raise ValueError('param alg is not correct')
+    if not isinstance(algs, list):
+        algs = [algs] * 2
     data, ans = [], []
     for i in range(gamenum):
         board = [[0 for i in range(3)]for i in range(3)]
@@ -143,7 +73,57 @@ def gamegen(gamenum, algs=[randomstep] * 2, args=(), piece=True):
     return data, ans
 
 
-def gen_piece(board):
+
+'''
+To train a val network, a board of all zero is not needed because that will not appear in 'next boards'
+'''
+def gamegen_partial(gamenum, algs=[perfectalg] * 2, args=()):
+    '''
+    1. Generate a random playout
+    2. Pick a step from it, and place the board as is by the step is finished
+    3. Play a game starting from that board, played by algs
+    4. Record down the board placed in 2 to `data`, the final result in `ans`
+    5. Repeat 1-4 as many as gamenum
+
+    Note: Each gamenum in gamegen is equvalent to 7.5 board, when randomstep
+    '''
+    if not isinstance(algs, list):
+        algs = [algs] * 2
+    data, ans = [], []
+    for i in range(gamenum):
+        board = [[0 for i in range(3)]for i in range(3)]
+        end = None
+        step = 0
+        while end is None:
+            step += 1
+            i, j = randomstep(board)
+            board[i][j] = step
+            if step >= 5:
+                end = isend(board, step+1)
+        rndstep = randint(1, step)
+        board = gen_piece(board, retmid=rndstep)
+        data.append(board.copy())
+        board = deflatten(board)
+        end = isend(board, rndstep+1)
+        step = rndstep
+        shuffle(algs)
+        while end is None:
+            step += 1
+            i, j = algs[step % 2](board, (step+1) % 2 + 1, step, *args)
+            board[i][j] = step
+            if step >= 5:
+                end = isend(board, step+1)
+        ans.append(end)
+    return data, ans
+
+
+def adddataset(d1, d2):
+    d1[0].extend(d2[0])
+    d1[1].extend(d2[1])
+    return d1
+
+
+def gen_piece(board, retmid=None):
     '''
     input:
     [[1,2,3],[4,5,6],[7,8,9]] or [1,2,3,4,5,6,7,8,9]
@@ -165,8 +145,12 @@ def gen_piece(board):
             if i <= 5:
                 raise  # The game couldn't have ended!
             break
-        ret.append(temp.copy())
-    return ret
+        if retmid is None:
+            ret.append(temp.copy())
+        elif i == retmid:
+            return temp
+    if retmid is None:
+        return ret
 
 
 def extractmove(board):

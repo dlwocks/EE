@@ -4,7 +4,8 @@ The base of ann_ai and logreg_ai
 from numpy import array
 
 import features as ft
-from ttthelper import gen_piece, flatten
+from ttthelper import gen_piece
+from tttbase import flatten
 
 '''
 Use of:     Value Network   Policy Network  Tree Search
@@ -16,22 +17,24 @@ Desired:    None            Yes(ML)         depth-0
 class base_ai(object):
     FEATURE_FUNC_MAP = {'board': ft.board,
                         'abs': ft.absboard,
-                        'extbd': ft.extboard,
+                        'extboard': ft.extboard,
                         'nboard': ft.nboard,
                         'lboard': ft.lboard,
                         'oboard': ft.oboard,
                         'orboard': ft.orboard,
                         'ctsur': ft.ctsur,
-                        'nextplayer': ft.nextplayer}
+                        'nextplayer': ft.nextplayer,
+                        'winpt': ft.winpt}
     FEATURE_NUM_MAP = {'board': 9,
                        'abs': 9,
-                       'extbd': 18,
+                       'extboard': 18,
                        'nboard': 9,
                        'lboard': 9,
                        'oboard': 9,
                        'orboard': 9,
                        'ctsur': 18,
-                       'nextplayer': 1}
+                       'nextplayer': 1,
+                       'winpt': 9}
 
     @property
     def feature_num(self):

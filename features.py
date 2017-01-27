@@ -3,9 +3,33 @@ Specifies features.
 
 All function here transforms a flattened tic-tac-toe board(as defined in ttttester.py) into another board using its own rule.
 '''
+
 def board(board):
     '''Linear: Odds -> 1, Evens -> -1, None - > 0'''
     return [0 if not i else 1 if i % 2 else -1 for i in board]
+
+'''
+[[1,2,3]
+ [4,5,6]
+ [7,8,9]]
+'''
+ROWS = [[0+i, 3+i, 6+i] for i in range(3)] + [[0+3*i, 1+3*i, 2+3*i] for i in range(3)] + [[0, 4, 8], [2, 4, 6]]
+
+
+def perm(row):
+    i, j, k = row
+    yield i, j, k
+    yield k, i, j
+    yield j, k, i
+
+
+def winpt(board):
+    ret = [0 for i in range(9)]
+    for row in ROWS:
+        for i, j, k in perm(row):
+            if board[i] % 2 == board[j] % 2 and board[i] != 0 and board[j] != 0 and board[k] == 0:
+                ret[k] = 1 if board[i] % 2 else -1
+    return ret
 
 
 def extboard(board):

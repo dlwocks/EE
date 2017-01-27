@@ -8,6 +8,9 @@ from copy import copy
 from itertools import count, accumulate
 from scipy.optimize import minimize
 from scipy.special import expit as sigmoid
+from random import randint, shuffle
+from ttthelper import gen_piece, randomstep
+from ai import perfectalg
 import warnings
 
 '''
@@ -17,6 +20,7 @@ that it is for first node in FORMER layer
 '''
 
 INT = "__import__('code').interact(local=locals())"
+
 
 #@profile
 def costfunc(theta, data, ans):
@@ -59,12 +63,13 @@ NEAR_ZERO = np.nextafter(0, 1)
 NEAR_ONE = np.nextafter(1, -1)
 
 class ann(object):
-    def __init__(self, layernum, theta=None):
+    def __init__(self, layernum, theta=None, reg=0):
         if not isinstance(layernum, list):
             raise TypeError('param layernum is not list or integer')
         if len(layernum) < 2:
             raise ValueError('param layernum is too small.'
                              'It should at least consist input/output layer')
+        self.reg = reg
         self.partialthetalen = _thetalen(layernum)
         self.totalthetalen = self.partialthetalen[-1]
         self.layernum = layernum
@@ -82,6 +87,16 @@ class ann(object):
             self.theta = theta
         else:
             self.theta = _rndinit(layernum)
+
+    def _regtheta(self, theta=None):
+        if theta is None:
+            theta = self.theta
+        ret = zeros_like(self.theta)
+        temp = 0
+        for i, l in enumerate(self.partialthetalen[1:]):
+            ret[temp+self.layernum[i+1]: l] = self.theta[temp+self.layernum[i+1]: l]
+            temp = l
+        return ret
 
     #@profile
     def fowardprop(self, allinp, theta=None):
@@ -104,10 +119,15 @@ class ann(object):
         return self.fowardprop(array([inp]))[0, self.cumlayernum[-1]:]  # [0]: first inp's output(while there's only one for .get)
 
     def costfunc(self, inp, ans):
+        assert len(inp) == len(ans)
         out = self.fowardprop(inp, self.theta)[:, self.cumlayernum[-1]:]
         np.place(out, out < NEAR_ZERO, NEAR_ZERO)
         np.place(out, out > NEAR_ONE, NEAR_ONE)  # Avoid overflow in log
-        return (ans * -np.log(out) - (1 - ans) * np.log(1 - out)).sum()
+        cost = (ans * -np.log(out) - (1 - ans) * np.log(1 - out)).sum()
+        if self.reg:
+            cost += self.reg * (self._regtheta()**2).sum() / 2
+        cost /= len(ans)
+        return cost
 
     #@profile
     def cost_and_gradient(self, theta, inp, ans):
@@ -116,6 +136,8 @@ class ann(object):
         np.place(out, out < NEAR_ZERO, NEAR_ZERO)
         np.place(out, out > NEAR_ONE, NEAR_ONE)  # Avoid overflow in log
         cost = (ans * -log(out) - (1 - ans) * log(1 - out)).sum()
+        if self.reg:
+            cost += self.reg * (self._regtheta()**2).sum() / 2
         g = zeros_like(theta)
         ln = self.layernum
         cln = self.cumlayernum
@@ -129,7 +151,7 @@ class ann(object):
             start, end = self.partialthetalen[l], self.partialthetalen[l+1]
             thetaseg = theta[start+ln[l+1]: end].reshape(ln[l], ln[l+1])
             d = np.inner(lasterror, thetaseg)
-            aseg = a[:, self.cumlayernum[l]: self.cumlayernum[l+1]]
+            aseg = a[:, cln[l]: cln[l+1]]
             agrad = aseg * (1 - aseg)
             lasterror = d * agrad
             g[fillptr - ln[l-1] * ln[l]: fillptr] = np.inner(a[:, cln[l-1]: cln[l]].T, lasterror.T).flatten()
@@ -137,6 +159,9 @@ class ann(object):
             g[fillptr - ln[l]: fillptr] = np.sum(lasterror, axis=0)
             fillptr -= ln[l]
         assert fillptr == 0, 'fillptr should be 0, but is %d' % fillptr
+        if self.reg:
+            g += self.reg * self._regtheta()
+        cost /= len(ans)
         g /= len(ans)
         return cost, g
 

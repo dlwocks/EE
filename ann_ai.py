@@ -8,6 +8,7 @@ import ttthelper as helper
 from base_ai import base_ai
 import pyximport
 import numpy as np
+from tttbase import flatten
 pyximport.install(setup_args={'include_dirs': np.get_include()})
 import cythonann
 import learningfunc
@@ -18,7 +19,7 @@ Reinforcement learning using trained value network
 Policy Network Training using perfectdataset
 '''
 class ann_ai(base_ai):
-    def __init__(self, val_hidden=None, pol_hidden=None, feature=['board'], cython=False):
+    def __init__(self, val_hidden=None, pol_hidden=None, feature=['board'], cython=False, reg=0):
         if val_hidden is None and pol_hidden is None:
             raise ValueError('No ANN is used') 
         self.USE_VAL = False if val_hidden is None else True
@@ -31,16 +32,10 @@ class ann_ai(base_ai):
                 if o == 0:
                     del val_hidden[i]
             val_layernum = [self.feature_num] + ([] if val_hidden is None else val_hidden) + [1]
-            if cython:
-                self.val_ann = cythonann.ann(val_layernum)
-            else:
-                self.val_ann = learningfunc.ann(val_layernum)
+            self.val_ann = learningfunc.ann(val_layernum, reg=reg)
         elif self.USE_POL:
             pol_layernum = [self.feature_num] + ([] if pol_hidden is None else pol_hidden) + [9]
-            if cython:
-                self.pol_ann = cythonann.ann(pol_layernum)
-            else:
-                self.pol_ann = learningfunc.ann(pol_layernum)
+            self.pol_ann = learningfunc.ann(pol_layernum, reg=reg)
         else:
             raise NotImplementedError
 
@@ -61,7 +56,7 @@ class ann_ai(base_ai):
         elif self.USE_POL:
             out = self.pol_ann.get(self.featureize_final(board))
             maxout, maxindex = 0, 0
-            flatbd = helper.flatten(board)
+            flatbd = flatten(board)
             for i, o in enumerate(out):
                 if flatbd[i] != 0:
                     continue

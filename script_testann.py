@@ -35,7 +35,7 @@ from cythonann import ann
 from learningfunc import ann
 from numpy import sin, abs, linspace, arange, array
 def target(inp):
-    return abs(sin(inp) /  inp)
+    return abs(sin(inp) / inp)
 
 inp = linspace(-10, 10, 1000)[None].T
 ans = target(inp)

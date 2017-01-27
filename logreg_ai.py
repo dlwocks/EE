@@ -10,8 +10,9 @@ import matplotlib.pyplot as plt
 import warnings
 
 from learningfunc import costfunc, costfunc_d
-from ttthelper import isend, emptyspace_pos
+from ttthelper import emptyspace_pos
 from base_ai import base_ai
+from tttbase import isend
 
 
 class logreg_ai(base_ai):

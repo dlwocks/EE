@@ -9,14 +9,22 @@ import itertools
 import statistics as stat
 from datetime import datetime, timedelta
 from learningfunc import ann
+import pickle
+import os
+from random import shuffle
 
-def mean(ls, ignorelarge=0, ignoresmall=0):
-    if len(ls) - ignorelarge - ignoresmall < 1:
+def mean(ls, ignoremax=0, ignoremin=0, formin=None, formax=None):
+    if len(ls) - ignoremax - ignoremin < 1:
         raise RuntimeError
-    if not (ignoresmall or ignorelarge):
+    if not (ignoremax or ignoremin or formin or formax):
         return stat.mean([i for i in ls if not np.isnan(i)])
     ls.sort()
-    return stat.mean([i for i in ls[ignoresmall: -ignorelarge] if not np.isnan(i)])
+    if ignoremax or ignoremin:
+        return stat.mean([i for i in ls[ignoremin: -ignoremax]])
+    if formin:
+        return stat.mean(ls[:formin])
+    elif formax:
+        return stat.mean(ls[-formax:])
 
 def stdev(ls):
     return stat.stdev(ls)
@@ -37,6 +45,7 @@ class timer(object):
         self._time = datetime.now() - self._ini
         self._acctime += self._time
         self._num += 1
+        print('Single: %s   Acc: %s   Num: %s' % (self.time, self.acc, self.num))
 
     @property
     def time(self):
@@ -51,7 +60,6 @@ class timer(object):
         return self._num
 
 
-
 '''
 It is shown that a large number of random gamegen(larger than 1000) is able to
 train a simple 9-hidden-unit-board-featured-ai close to perfect. (AEP larger than 90)
@@ -59,29 +67,20 @@ Thus, this script **tries to find maximum AEP that could be get from the trainin
 The highest AEP observed is: 92.77 (6000 game, 9 hidden)
 The perfect one has AEP of: 91.89
 '''
-def r1(gamenum=6000, hidden=[9]):  # thesre are the specific config.
+def r1(gamenum=2000, hidden=[9], feature=['board']):  # thesre are the specific config.
     t = timer()
     if isinstance(hidden, int):
         hidden = [hidden]
     allptrec = []
-    ptrec = []
-    airec = []
     while True:
         try:
             with t:
                 dataset = ttthelper.gamegen(gamenum, algs=[ttthelper.randomstep] * 2)
                 ai = ann_ai.ann_ai(val_hidden=hidden, pol_hidden=None, feature=['board'])
                 ai.train(dataset, pt=False)
-                pt = ttttester.complete_check(ai.getstep)
-            print('(%s)' % t(), end=' ')
+                pt = ttttester.complete_check(ai.getstep)[0]
+            print('Single: %s  Acc: %s  Num: %s' % (t.time, t.acc, t.num))
             allptrec.append(pt)
-            threshold = 91
-            if pt > threshold:
-                print('pt larger than thershold: %0.2f. Recorded.' % pt)
-                ptrec.append(pt)
-                airec.append(ai)
-            else:
-                print('pt smaller than threshold: %0.2f.' % pt)
         except KeyboardInterrupt:
             break
     if len(allptrec) >= 10:
@@ -124,31 +123,29 @@ Good performance in about 8-10 hidden units.
 Why adding hidden unit above the value helps negatively??
     -Overfitting..? Need to investigate this upon minres.fun
 '''
-def r3(ini=0, step=1, num=20):  # inis for hidden layer
+def r3(ini=1, step=1, num=20):  # inis for hidden layer
     t = timer()
     if ini == 0:
         hiddenslist = [[]] + [[ini + step * i] for i in range(1, num)]
     elif ini > 0:
         hiddenslist = [[ini + step * i] for i in range(num)]
-    gamenumlist = [100, 500, 1000]
-    ptrec = [[[] for _ in range(num)] for _ in range(len(gamenumlist))]
+    gamenum = 1000
+    ptrec = [[] for _ in range(num)]
     while True:
         try:
             with t:
-                for i, gamenum in enumerate(gamenumlist):
-                    dataset = ttthelper.gamegen(gamenum, algs=[ttthelper.randomstep] * 2)
-                    for j, hidden in enumerate(hiddenslist):
-                        ai = ann_ai.ann_ai(val_hidden=hidden, pol_hidden=None, feature=['board'])
-                        ai.train(dataset, pt=False)
-                        pt = ttttester.complete_check(ai.getstep)
-                        ptrec[i][j].append(pt)
+                dataset = ttthelper.gamegen(gamenum, algs=[ttthelper.randomstep] * 2)
+                for j, hidden in enumerate(hiddenslist):
+                    ai = ann_ai.ann_ai(val_hidden=hidden, pol_hidden=None, feature=['board'])
+                    ai.train(dataset, pt=False)
+                    pt = ttttester.complete_check(ai.getstep)[0]
+                    ptrec[j].append(pt)
             print('Done in %s' % t())
         except KeyboardInterrupt:
             break
-    ptrecmean = [[mean(thisrec) for thisrec in gamerec] for gamerec in ptrec]
-    for i, gamerecmean in enumerate(ptrecmean):
-        plt.plot([ini + step * i for i in range(num)], gamerecmean)
-        plt.title()
+    ptrecmean = [mean(thisrec) for thisrec in ptrec]
+    plt.plot([ini + step * i for i in range(num)], ptrec)
+    plt.title()
     plt.show()
     interact(local=locals())
 
@@ -159,13 +156,26 @@ Following script will directly measure the error of ann to **choose the number o
 It is similar to r3, but use error of ann on **validation set** as measure.
 Value Network specific.
 
-One Result: 14.8?
+9-11 hidden unit seems to be optimal.
 '''
-def r4(ini=0, step=1, num=6):
+def r4():
+    ini = 1
+    step = 1
+    num = 20
+    fileexist = os.path.exists('r4.dump')
+    if fileexist:
+        print('dumped file found')
+        with open('r4.dump', 'rb') as o:
+            trainerrs, validateerrs, setup = pickle.load(o)
+    if not fileexist:
+        trainerrs = [[] for i in range(num)]
+        validateerrs = [[] for i in range(num)]
+    if fileexist and setup != (ini, step, num):
+        input('Setup doesn\'t match. You sure continue?')
+        trainerrs = [[] for i in range(num)]
+        validateerrs = [[] for i in range(num)]
     t = timer()
     hiddenslist = [ini + step * i for i in range(num)]
-    trainerrs = [[] for i in range(num)]
-    validateerrs = [[] for i in range(num)]
     trainnum = 1000
     while True:
         try:
@@ -175,22 +185,20 @@ def r4(ini=0, step=1, num=6):
                 for i, hidden in enumerate(hiddenslist):
                     ai = ann_ai.ann_ai(val_hidden=hidden, pol_hidden=None, feature=['board'])
                     minres = ai.train(trainset, pt=False)
-                    interact(local=locals())
                     trainerrs[i].append(minres.fun)
-                    validateerrs[i].append(ai.getcost(validateset))
-            print('Single: %s  Acc: %s  Num: %s' % (t.time, t.acc, t.num))
+                    cost = ai.getcost(validateset)
+                    validateerrs[i].append(cost)
         except KeyboardInterrupt:
             break
-    trainerrmean = [mean(thiserr)/4 for thiserr in trainerrs]
-    validateerrmean = [mean(thiserr) for thiserr in validateerrs]
-    p1 = plt.plot(hiddenslist, trainerrmean)
-    p2 = plt.plot(hiddenslist, validateerrmean)
+    trainerrmean = [min(thiserr) for thiserr in trainerrs]
+    validateerrmean = [min(thiserr) for thiserr in validateerrs]
+    p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
+    p2 = plt.plot([ini + step * i for i in range(num)], validateerrmean)
     plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
-    coefs = np.polyfit([ini + step * i for i in range(num)], validateerrmean, 2)
-    def poly(a, b, c, x):
-        return a*(x**2) + b*x + c
-    plt.plot(hiddenslist, [poly(*coefs, i) for i in hiddenslist])
     plt.show()
+    with open('r4.dump', 'wb') as o:
+        setup = (ini, step, num)
+        pickle.dump((trainerrs, validateerrs, setup), o)
     interact(local=locals())
 
 '''
@@ -199,13 +207,26 @@ Now this script will measure the error of ann to **choose the number of training
 It is similar to r2, but use error of ann on **validation set** as measure.
 Value Network specific.
 To Think: Should validateset be outside of gamenumlist loop?
+
+Over 5000-6000 training set seems to produce minimal improvement.
+The game number may be improved by using training set from more educated alg
 '''
 def r5(ini=1000, step=1000, num=10):
-    OPTIMAL_LAYERNUM = 9
+    fileexist = os.path.exists('r5.dump')
+    if fileexist:
+        print('dumped file found')
+        with open('r5.dump', 'rb') as o:
+            trainerrs, validateerrs, setup = pickle.load(o)
+    if not fileexist:
+        trainerrs = [[] for i in range(num)]
+        validateerrs = [[] for i in range(num)]
+    if fileexist and setup != (ini, step, num):
+        input('Setup doesn\'t match. You sure continue?')
+        trainerrs = [[] for i in range(num)]
+        validateerrs = [[] for i in range(num)]  
+    OPTIMAL_LAYERNUM = 8
     t = timer()
     gamenumlist = [ini + step * i for i in range(num)]
-    trainerrs = [[] for i in range(num)]
-    validateerrs = [[] for i in range(num)]
     while True:
         try:
             with t:
@@ -214,16 +235,149 @@ def r5(ini=1000, step=1000, num=10):
                     trainset = ttthelper.gamegen(gamenum, algs=[ttthelper.randomstep] * 2)
                     ai = ann_ai.ann_ai(val_hidden=[OPTIMAL_LAYERNUM], pol_hidden=None, feature=['board'])
                     minres = ai.train(trainset, pt=False)
-                    trainerrs[i].append(minres.fun / gamenumlist[i] * ini / 2)  # 2 as from gamegen(ini//`2`)
+                    trainerrs[i].append(minres.fun)  # 2 as from gamegen(ini//`2`)
                     validateerrs[i].append(ai.getcost(validateset))
             print('Single: %s   Acc: %s   Num: %s' % (t.time, t.acc, t.num))
         except KeyboardInterrupt:
             break
-    trainerrmean = [mean(thiserr, ignorelarge=1) for thiserr in trainerrs]
-    validateerrmean = [mean(thiserr, ignorelarge=1) for thiserr in validateerrs]
+    trainerrmean = [mean(thiserr) for thiserr in trainerrs]
+    validateerrmean = [mean(thiserr) for thiserr in validateerrs]
     p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
     p2 = plt.plot([ini + step * i for i in range(num)], validateerrmean)
     plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
+    plt.show()
+    plt.plot([ini + step * i for i in range(num)], np.array(validateerrmean) - np.array(trainerrmean))
+    plt.show()
+    with open('r5.dump', 'wb') as o:
+        setup = (ini, step, num)
+        pickle.dump((trainerrs, validateerrs, setup), o)
+    interact(local=locals())
+
+
+'''
+Regularization!
+
+Result saying, regularization may be useless in this
+'''
+def r6(ini=0, step=0.02, num=30):
+    fileexist = os.path.exists('r6.dump')
+    if fileexist:
+        print('dumped file found')
+        with open('r6.dump', 'rb') as o:
+            trainerrs, validateerrs, setup = pickle.load(o)
+    if not fileexist:
+        trainerrs = [[] for i in range(num)]
+        validateerrs = [[] for i in range(num)]
+    if fileexist and setup != (ini, step, num):
+        input('Setup doesn\'t match. You sure continue?')
+        trainerrs = [[] for i in range(num)]
+        validateerrs = [[] for i in range(num)]  
+    GAMENUM = 500
+    OPTLAYER = 8
+    t = timer()
+    reglist = [ini + step * i for i in range(num)]
+    trainerrs = [[] for i in range(num)]
+    validateerrs = [[] for i in range(num)]
+    while True:
+        try:
+            with t:
+                trainset = ttthelper.gamegen(GAMENUM, algs=[ttthelper.randomstep] * 2)
+                validateset = ttthelper.gamegen(GAMENUM // 2, algs=[ttthelper.randomstep] * 2)
+                for i, reg in enumerate(reglist):
+                    ai = ann_ai.ann_ai(val_hidden=[OPTLAYER], pol_hidden=None, feature=['board'], reg=reg)
+                    minres = ai.train(trainset, pt=False)
+                    trainerrs[i].append(minres.fun)
+                    validateerrs[i].append(ai.getcost(validateset))
+            print('Single: %s   Acc: %s   Num: %s' % (t.time, t.acc, t.num))
+        except KeyboardInterrupt:
+            break
+    with open('r6.dump', 'wb') as o:
+        setup = (ini, step, num)
+        pickle.dump((trainerrs, validateerrs, setup), o)
+    interact(local=locals())
+
+'''
+Test for different way of producing dataset
+'''
+def r7():
+    boardnum = 10000
+    from ttttester import completecheck, randomcheck
+    from ttthelper import gamegen_partial, randomstep, gamegen, adddataset
+    from ai import perfectalg
+    from ann_ai import ann_ai
+    dataset1 = gamegen_partial(boardnum, algs=randomstep)
+    dataset2 = gamegen_partial(boardnum, algs=perfectalg)
+    tempdataset = gamegen(100)
+    tempai = ann_ai(val_hidden=9)
+    tempai.train(tempdataset)
+    dataset3 = gamegen_partial(boardnum, algs=tempai.getstep)
+    print('randomstep:')
+    print(completecheck(randomstep), randomcheck(randomstep))
+    print('slightly educated ai:')
+    print(completecheck(tempai.getstep), randomcheck(tempai.getstep))
+    dataset4 = [], []
+    for i in range(100):
+        tempdataset = gamegen(100)
+        tempai = ann_ai(val_hidden=9)
+        tempai.train(tempdataset)
+        dataset4 = adddataset(dataset4, gamegen_partial(boardnum//100, algs=tempai.getstep))
+    airnd = ann_ai(val_hidden=9)
+    aipft = ann_ai(val_hidden=9)
+    aised = ann_ai(val_hidden=9)
+    aiseds = ann_ai(val_hidden=9)
+    airnd.train(dataset1)
+    print('ai trained with random dataset:')
+    print(completecheck(airnd.getstep), randomcheck(airnd.getstep))
+    aipft.train(dataset2)
+    print('ai trained with perfect dataset:')
+    print(completecheck(aipft.getstep), randomcheck(aipft.getstep))
+    aised.train(dataset3)
+    print('ai trained with slightly educated dataset:')
+    print(completecheck(aised.getstep), randomcheck(aised.getstep))
+    aiseds.train(dataset4)
+    print('ai trained with multiple slightly educated dataset:')
+    print(completecheck(aiseds.getstep), randomcheck(aiseds.getstep))
+    print('perfect ai:')
+    print(completecheck(perfectalg), randomcheck(perfectalg))
+    print('\a')
+    interact(local=locals())
+
+'''
+Test for different features!
+With different features, comparing error is meaningless, isn't it..?
+    Or maybe yes, error just describes how well the model can predict final result
+One point: if feature different, suitable hidden layer should be different!
+'''
+def r8(*features):
+    ini = 5
+    step = 2
+    num = 3
+    trainerrs = [[[] for i in range(num)] for i in range(len(features))]
+    validateerrs = [[[] for i in range(num)] for i in range(len(features))]
+    t = timer()
+    hiddenslist = [ini + step * i for i in range(num)]
+    trainnum = 1000
+    while True:
+        try:
+            with t:
+                trainset = ttthelper.gamegen(trainnum, algs=ttthelper.randomstep)
+                validateset = ttthelper.gamegen(trainnum//4, algs=ttthelper.randomstep)
+                for i, hidden in enumerate(hiddenslist):
+                    for f, feature in enumerate(features):
+                        ai = ann_ai.ann_ai(val_hidden=hidden, feature=feature)
+                        minres = ai.train(trainset)
+                        trainerrs[f][i].append(minres.fun)
+                        cost = ai.getcost(validateset)
+                        validateerrs[f][i].append(cost)
+        except KeyboardInterrupt:
+            break
+    trainp, valip = [], []
+    for train, validate, feature in zip(trainerrs, validateerrs, features):
+        trainerrmean = [mean(thiserr) for thiserr in train]
+        validateerrmean = [mean(thiserr) for thiserr in validate]
+        trainp.append(plt.plot([ini + step * i for i in range(num)], trainerrmean)[0])
+        valip.append(plt.plot([ini + step * i for i in range(num)], validateerrmean)[0])
+    plt.legend(trainp + valip, ['%s: Train' % str(f) for f in features] + ['%s: Validate' % str(f) for f in features])
     plt.show()
     interact(local=locals())
 

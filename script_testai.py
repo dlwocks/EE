@@ -56,7 +56,7 @@ for i in count():
 def alg_timer(alg):
     # Times the average times required to take a step
     from timeit import timeit
-    import ttthelper
+    import tttbase
     time = 0
     GAME = 10
     NUM = 100
@@ -65,7 +65,7 @@ def alg_timer(alg):
     for _ in range(GAME):
         step = 1
         board = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-        while ttthelper.isend(board) is None:
+        while tttbase.isend(board) is None:
             time += timeit(lambda: alg(board, 1 if step % 2 else 2, step), number=NUM)
             timedcount += 1
             i, j = alg(board, 1 if step % 2 else 2, step)

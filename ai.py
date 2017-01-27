@@ -1,11 +1,11 @@
 '''
-Defines algorithm_wiki, a perfect algorithm for tic-tac-toe
+Defines perfectalg, a perfect algorithm for tic-tac-toe
 '''
 import logging as log
 from itertools import product
 from random import shuffle, sample
 
-from ttthelper import isend
+from tttbase import isend
 
 
 def donothing(x, _):
@@ -20,7 +20,7 @@ def _permutation(row, r):
         yield p
 
 
-def _row_gen_pos(r):
+def _row_gen_pos(r=False):
     pool = [[(i, 0), (i, 1), (i, 2)] for i in range(3)] + [[(0, i), (1, i), (2, i)] for i in range(3)] + [[(0, 0), (1, 1), (2, 2)], [(0, 2), (1, 1), (2, 0)]]
     if r:
         shuffle(pool)
@@ -86,7 +86,6 @@ def perfectalg(board, ainum, turn, rndfrombest=False):
     6. Opposite Corner (NI)
     7. Empty Corner
     8. Empty Side
-
     '''
     pos = _two_in_a_row(board, ainum, rndfrombest)
     if pos:

@@ -10,15 +10,19 @@ The board in this system is a 3*3 array.
 Odd number in the array represents 'odd player', who definitely goes first.
 Even number in the array represents 'even player', who definitely goes second.
 Number n in the board represent nth step played in the game.
+
+ainum and step can be determined from board! It just speed up the progress!
 '''
 import logging as log
 from itertools import product, repeat
 from numpy import array
 from copy import copy, deepcopy
 from random import randint
+from code import interact
 
 from ai import perfectalg
-from ttthelper import isend, printboard
+from ttthelper import printboard, randomstep
+from tttbase import isend
 
 global count
 
@@ -94,12 +98,48 @@ def complete_check(algorithm=perfectalg, pt=False):
         print('AI goes first: ' + str(count))
     board = [[0 for i in range(3)] for j in range(3)]
     for subboard in emptyspace(board, 1):
-        _complete_check(algorithm, subboard, 2)
+        _complete_check(algorithm, subboard, step=2, ainum=2)
     aep = (count['AI'] * 2 + count['Draw']) / sum(count.values()) * 50
     if pt:
         print('Total:%s' % str(count))
         print('Algorithm Evaluation Point:%0.2f' % aep)
-    return round(aep, 2)
+    return round(aep, 2), count['AI'], count['Draw'], count['Iterator']
+
+def completecheck(algorithm=perfectalg, pt=False):
+    return complete_check(algorithm, pt)
+
+def randomcheck(algorithm, gamenum=10000):
+    '''
+    algorithm always starts first. IOW, algorithm is an odd player
+    '''
+    win = 0
+    draw = 0
+    lose = 0
+    for i in range(gamenum):
+        board = [[0, 0, 0] for i in range(3)]
+        end = 0
+        step = 1
+        while step < 10:
+            if step % 2:
+                called = algorithm if i < gamenum // 2 else randomstep
+                i, j = called(board, 1, step)
+            else:
+                called = algorithm if i >= gamenum // 2 else randomstep
+                i, j = called(board, 2, step)
+            board[i][j] = step
+            step += 1
+            if 10 >= step >= 6:
+                end = isend(board, step)
+                if end == 1:
+                    win += 1
+                    break
+                elif end == 0:
+                    lose += 1
+                    break
+                elif end == 0.5:
+                    draw += 1
+                    break
+    return (win, draw, lose)
 
 
 def _board(board):
@@ -136,12 +176,6 @@ def play_with(algorithm, playerfirst=True):
         step += 1
 
 
-def againstperfect(algorithm, perfectfirst=True):
-    board = [[0 for i in range(3)]for i in range(3)]
-    step = 1
-    end = 0
-    while step < 10:
-        print(printboard(_board(board)))
 
 
 if __name__ == '__main__':
