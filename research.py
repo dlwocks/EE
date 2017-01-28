@@ -11,7 +11,11 @@ from datetime import datetime, timedelta
 from learningfunc import ann
 import pickle
 import os
-from random import shuffle
+from random import shuffle, randint
+import tttbase
+from ttttester import completecheck, randomcheck
+from ttthelper import gamegen_partial, randomstep, gamegen, adddataset
+from itertools import count
 
 def mean(ls, ignoremax=0, ignoremin=0, formin=None, formax=None):
     if len(ls) - ignoremax - ignoremin < 1:
@@ -31,8 +35,11 @@ def stdev(ls):
 
 
 class timer(object):
+    def __init__(self):
+        self._veryini = datetime.now()
+
     def __call__(self):
-        return str(self._time)
+        return str(datetime.now() - self._veryini)
 
     def __enter__(self):
         if not hasattr(self, '_acctime'):
@@ -156,7 +163,7 @@ Following script will directly measure the error of ann to **choose the number o
 It is similar to r3, but use error of ann on **validation set** as measure.
 Value Network specific.
 
-9-11 hidden unit seems to be optimal.
+10-16 hidden unit seems to be optimal.
 '''
 def r4():
     ini = 1
@@ -273,7 +280,7 @@ def r6(ini=0, step=0.02, num=30):
         trainerrs = [[] for i in range(num)]
         validateerrs = [[] for i in range(num)]  
     GAMENUM = 500
-    OPTLAYER = 8
+    OPTLAYER = 9
     t = timer()
     reglist = [ini + step * i for i in range(num)]
     trainerrs = [[] for i in range(num)]
@@ -301,9 +308,6 @@ Test for different way of producing dataset
 '''
 def r7():
     boardnum = 10000
-    from ttttester import completecheck, randomcheck
-    from ttthelper import gamegen_partial, randomstep, gamegen, adddataset
-    from ai import perfectalg
     from ann_ai import ann_ai
     dataset1 = gamegen_partial(boardnum, algs=randomstep)
     dataset2 = gamegen_partial(boardnum, algs=perfectalg)
@@ -345,7 +349,7 @@ def r7():
 '''
 Test for different features!
 With different features, comparing error is meaningless, isn't it..?
-    Or maybe yes, error just describes how well the model can predict final result
+    Or maybe no, error just describes how well the model can predict final result
 One point: if feature different, suitable hidden layer should be different!
 '''
 def r8(*features):
@@ -381,6 +385,74 @@ def r8(*features):
     plt.show()
     interact(local=locals())
 
+'''
+Policy Network! I think this is the last r needed for ttt
+
+To create dataset for policy network:
+1. Create one random situation
+2. Check perfectalg's move at the chosen situation
+3. Append situation as data, append move as ans
+4. Repeat 1-3
+'''
+def gamegen_policy(boardnum):
+    data = []
+    ans = []
+    for i in range(boardnum):
+        board = [[0 for i in range(3)]for i in range(3)]
+        end = None
+        step = 0
+        while end is None:
+            step += 1
+            i, j = ttthelper.randomstep(board)
+            board[i][j] = step
+            if step >= 5:
+                end = tttbase.isend(board, step+1)
+        rndstep = randint(1, 8 if step >= 9 else step)
+        board = ttthelper.gen_piece(board, retmid=rndstep)
+        data.append(board.copy())
+        i, j = perfectalg(tttbase.deflatten(board), 1 if rndstep+1 % 2 else 2, rndstep+1, rndfrombest=True)
+        mv = [1 if ind == 3 * i + j else 0 for ind in range(9)]
+        ans.append(mv)
+    return data, ans
+
+def r9(number=None):
+    t = timer()
+    ini = 10
+    step = 2
+    num = 6
+    boardnum = 40000
+    traindataset = gamegen_policy(boardnum)
+    validataset = gamegen_policy(boardnum // 4)
+    hiddenlist = [ini + step * i for i in range(num)]
+    trainerrs = [[] for i in range(num)]
+    valierrs = [[] for i in range(num)]
+    if number is None:
+        itr = count()
+    else:
+        itr = range(number)
+    for i in itr:
+        try:
+            with t:
+                for i, hidden in enumerate(hiddenlist):
+                    ai = ann_ai.ann_ai(pol_hidden=hidden, feature=['board'])
+                    minres = ai.train(traindataset)
+                    trainerrs[i].append(minres.fun)
+                    cost = ai.getcost(validataset)
+                    valierrs[i].append(cost)
+                    print('hidden layer %d done in %s' % (hidden, t()))
+                print('\a')
+        except KeyboardInterrupt:
+            break
+    trainerrmean = [min(thiserr) for thiserr in trainerrs]
+    validateerrmean = [min(thiserr) for thiserr in valierrs]
+    p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
+    p2 = plt.plot([ini + step * i for i in range(num)], validateerrmean)
+    plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
+    plt.show()
+    interact(local=locals())
+
+
+
 
 if __name__ == '__main__':
-    r4()
+    r9(number=5)

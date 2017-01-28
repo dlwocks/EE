@@ -34,6 +34,8 @@ class ann_ai(base_ai):
             val_layernum = [self.feature_num] + ([] if val_hidden is None else val_hidden) + [1]
             self.val_ann = learningfunc.ann(val_layernum, reg=reg)
         elif self.USE_POL:
+            if isinstance(pol_hidden, int):
+                pol_hidden = [pol_hidden]
             pol_layernum = [self.feature_num] + ([] if pol_hidden is None else pol_hidden) + [9]
             self.pol_ann = learningfunc.ann(pol_layernum, reg=reg)
         else:
@@ -82,7 +84,8 @@ class ann_ai(base_ai):
             data, ans = self.dataset_featureize(dataset)
             return self.val_ann.costfunc(data, ans)
         elif self.USE_POL:
-            raise NotImplementedError
+            data, ans = self.dataset_featureize(dataset)
+            return self.pol_ann.costfunc(data, ans)
 
     #@profile
     def train(self, dataset=None, pt=False, pt_option='all', gtol=1e-5):
@@ -105,5 +108,6 @@ class ann_ai(base_ai):
         elif self.USE_POL:
             if dataset is None:
                 raise ValueError
-            data, ans = dataset
+            data, ans = self.dataset_featureize(dataset)
             minres = self.pol_ann.train(data, ans, gtol)
+            return minres

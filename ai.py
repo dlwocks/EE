@@ -87,6 +87,8 @@ def perfectalg(board, ainum, turn, rndfrombest=False):
     7. Empty Corner
     8. Empty Side
     '''
+    if turn == 10:
+        raise ValueError('Board is full..?')
     pos = _two_in_a_row(board, ainum, rndfrombest)
     if pos:
         log.info('returned in _two_in_a_row')
