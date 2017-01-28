@@ -69,7 +69,10 @@ class ann_ai(base_ai):
     def dataset_featureize(self, dataset):
         data, ans = dataset
         data = array([self.featureize_final(d) for d in data])
-        ans = array([[a] for a in ans])
+        if isinstance(ans[0], list):
+            ans = array(ans)
+        else:
+            ans = array([[a] for a in ans])
         return data, ans
 
     def getcost(self, dataset):
