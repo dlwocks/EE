@@ -415,17 +415,27 @@ def gamegen_policy(boardnum):
         ans.append(mv)
     return data, ans
 
-def r9(number=None):
+def r9_single(hidden=22):
+    dataset = gamegen_policy(40000)
+    ai = ann_ai.ann_ai(pol_hidden=hidden, feature=['board', 'winpt'])
+    minres = ai.train(dataset)
+    print('training completed')
+    print(completecheck(ai.getstep))
+    print(randomcheck(ai.getstep))
+    interact(local=locals())
+
+def r9(number=3):
     t = timer()
-    ini = 10
+    ini = 32
     step = 2
-    num = 6
+    num = 2
     boardnum = 40000
     traindataset = gamegen_policy(boardnum)
     validataset = gamegen_policy(boardnum // 4)
     hiddenlist = [ini + step * i for i in range(num)]
     trainerrs = [[] for i in range(num)]
     valierrs = [[] for i in range(num)]
+    airec = [[] for i in range(num)]
     if number is None:
         itr = count()
     else:
@@ -439,12 +449,13 @@ def r9(number=None):
                     trainerrs[i].append(minres.fun)
                     cost = ai.getcost(validataset)
                     valierrs[i].append(cost)
+                    airec[i].append(ai)
                     print('hidden layer %d done in %s' % (hidden, t()))
                 print('\a')
         except KeyboardInterrupt:
             break
-    trainerrmean = [min(thiserr) for thiserr in trainerrs]
-    validateerrmean = [min(thiserr) for thiserr in valierrs]
+    trainerrmean = [mean(thiserr) for thiserr in trainerrs]
+    validateerrmean = [mean(thiserr) for thiserr in valierrs]
     p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
     p2 = plt.plot([ini + step * i for i in range(num)], validateerrmean)
     plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
@@ -452,7 +463,5 @@ def r9(number=None):
     interact(local=locals())
 
 
-
-
 if __name__ == '__main__':
-    r9(number=5)
+    r9()
