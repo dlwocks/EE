@@ -6,11 +6,8 @@ from itertools import chain
 
 import ttthelper as helper
 from base_ai import base_ai
-import pyximport
 import numpy as np
 from tttbase import flatten
-pyximport.install(setup_args={'include_dirs': np.get_include()})
-import cythonann
 import learningfunc
 
 '''

@@ -87,7 +87,6 @@ def r1(gamenum=2000, hidden=[9], feature=['board']):  # thesre are the specific 
                 ai = ann_ai.ann_ai(val_hidden=hidden, pol_hidden=None, feature=['board'])
                 ai.train(dataset, pt=False)
                 pt = ttttester.complete_check(ai.getstep)[0]
-            print('Single: %s  Acc: %s  Num: %s' % (t.time, t.acc, t.num))
             allptrec.append(pt)
         except KeyboardInterrupt:
             break
