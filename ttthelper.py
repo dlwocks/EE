@@ -16,13 +16,15 @@ def printboard(board, signmap={0: "+", 1: "O", 2: "X"}, hspace='-'):
         ret += '\n' if x == len(board[0])-1 else hspace
     return ret
 
-def emptyspace_pos(board, step):
-    for i in range(3):
-        for j in range(3):
-            if board[i][j] == 0:
-                board[i][j] = step
-                yield board, i, j
-                board[i][j] = 0
+def emptyspace_pos(board, step, rnd=False):
+    indexlist = list(product(range(3), range(3)))
+    if rnd:
+        shuffle(indexlist)
+    for i, j in indexlist:
+        if board[i][j] == 0:
+            board[i][j] = step
+            yield board, i, j
+            board[i][j] = 0
 
 
 def randomstep(board, _=None, __=None):

@@ -37,6 +37,7 @@ def stdev(ls):
 class timer(object):
     def __init__(self):
         self._veryini = datetime.now()
+        print('Started at', self._veryini)
 
     def __call__(self):
         return str(datetime.now() - self._veryini)
@@ -208,6 +209,71 @@ def r4():
         pickle.dump((trainerrs, validateerrs, setup), o)
     interact(local=locals())
 
+def r4_l(seclayer=10):
+    ini = 10
+    step = 2
+    num = 5
+    trainerrs = [[] for i in range(num)]
+    validateerrs = [[] for i in range(num)]
+    t = timer()
+    hiddenslist = [ini + step * i for i in range(num)]
+    trainnum = 1000
+    while True:
+        try:
+            with t:
+                trainset = ttthelper.gamegen(trainnum, algs=[ttthelper.randomstep] * 2)
+                validateset = ttthelper.gamegen(trainnum//4, algs=[ttthelper.randomstep] * 2)
+                for i, hidden in enumerate(hiddenslist):
+                    ai = ann_ai.ann_ai(val_hidden=[hidden, seclayer], pol_hidden=None, feature=['board'])
+                    minres = ai.train(trainset, pt=False)
+                    trainerrs[i].append(minres.fun)
+                    cost = ai.getcost(validateset)
+                    validateerrs[i].append(cost)
+        except KeyboardInterrupt:
+            break
+    trainerrmean = [min(thiserr) for thiserr in trainerrs]
+    validateerrmean = [min(thiserr) for thiserr in validateerrs]
+    p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
+    p2 = plt.plot([ini + step * i for i in range(num)], validateerrmean)
+    plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
+    plt.show()
+    interact(local=locals())
+
+def r4_2d():
+    ini = 4
+    step = 2
+    num = 6
+    trainerrs = [[[] for i in range(num)] for i in range(num)]
+    valierrs = [[[] for i in range(num)] for i in range(num)]
+    t = timer()
+    hiddenslist = [ini + step * i for i in range(num)]
+    trainnum = 1000
+    while True:
+        try:
+            with t:
+                trainset = ttthelper.gamegen(trainnum, algs=[ttthelper.randomstep] * 2)
+                validateset = ttthelper.gamegen(trainnum//4, algs=[ttthelper.randomstep] * 2)
+                for i, hid1 in enumerate(hiddenslist):
+                    for j, hid2 in enumerate(hiddenslist):
+                        ai = ann_ai.ann_ai(val_hidden=[hid1, hid2], pol_hidden=None, feature=['board'])
+                        minres = ai.train(trainset, pt=False)
+                        trainerrs[i][j].append(minres.fun)
+                        cost = ai.getcost(validateset)
+                        valierrs[i][j].append(cost)
+                    print('1st hid %s done in %s' % (str(hid1), t()))
+        except KeyboardInterrupt:
+            break
+    interact(local=locals())
+    valierrmean = [[min(thiserrs) for thiserrs in hiddenerrs] for hiddenerrs in valierrs]
+    temp = []
+    for i, hiddenerrmean in enumerate(valierrmean):
+        p = plt.plot([ini + step * i for i in range(num)], valierrmean[i])
+        temp.append(p[0])
+    plt.legend(temp, ['1st hid: %s' % str(h) for h in hiddenslist])
+    plt.show()
+    interact(local=locals())
+
+
 '''
 The optimal number of hidden layer will be determined above.
 Now this script will measure the error of ann to **choose the number of training set**.
@@ -312,7 +378,7 @@ def r7():
     dataset1 = gamegen_partial(boardnum, algs=randomstep)
     dataset2 = gamegen_partial(boardnum, algs=perfectalg)
     tempdataset = gamegen(100)
-    tempai = ann_ai(val_hidden=9)
+    tempai = ann_ai(val_hidden=11)
     tempai.train(tempdataset)
     dataset3 = gamegen_partial(boardnum, algs=tempai.getstep)
     print('randomstep:')
@@ -322,13 +388,13 @@ def r7():
     dataset4 = [], []
     for i in range(100):
         tempdataset = gamegen(100)
-        tempai = ann_ai(val_hidden=9)
+        tempai = ann_ai(val_hidden=11)
         tempai.train(tempdataset)
         dataset4 = adddataset(dataset4, gamegen_partial(boardnum//100, algs=tempai.getstep))
-    airnd = ann_ai(val_hidden=9)
-    aipft = ann_ai(val_hidden=9)
-    aised = ann_ai(val_hidden=9)
-    aiseds = ann_ai(val_hidden=9)
+    airnd = ann_ai(val_hidden=11)
+    aipft = ann_ai(val_hidden=11)
+    aised = ann_ai(val_hidden=11)
+    aiseds = ann_ai(val_hidden=11)
     airnd.train(dataset1)
     print('ai trained with random dataset:')
     print(completecheck(airnd.getstep), randomcheck(airnd.getstep))
@@ -346,42 +412,127 @@ def r7():
     print('\a')
     interact(local=locals())
 
+
+def r7_2():
+    ini = 10
+    step = 1
+    num = 21
+    t = timer()
+    hiddenslist = [ini + step * i for i in range(num)]
+    trainnum = 10000
+    alglist = [randomstep, perfectalg]
+    trainerrs = [[[] for i in range(num)] for i in range(len(alglist))]
+    valierrs = [[[] for i in range(num)] for i in range(len(alglist))]
+    while True:
+        try:
+            with t:
+                for a, alg in enumerate(alglist):
+                    trainset = gamegen_partial(trainnum, algs=alg)
+                    valiset = gamegen_partial(trainnum//4, algs=alg)
+                    for i, hidden in enumerate(hiddenslist):
+                        ai = ann_ai.ann_ai(val_hidden=hidden, pol_hidden=None, feature=['board'])
+                        minres = ai.train(trainset, pt=False)
+                        trainerrs[a][i].append(minres.fun)
+                        cost = ai.getcost(valiset)
+                        valierrs[a][i].append(cost)
+        except KeyboardInterrupt:
+            break
+    trainerrmean = [[mean(thiserr) for thiserr in algerrs] for algerrs in trainerrs]
+    valierrmean = [[mean(thiserr) for thiserr in algerrs] for algerrs in valierrs]
+    temp = []
+    for algerrs in valierrmean:
+        p = plt.plot([ini + step * i for i in range(num)], algerrs)
+        temp.append(p[0])
+    plt.legend(temp, [alg.__name__ for alg in alglist])
+    plt.show()
+    interact(local=locals())
+
+def r7_3():
+    # Dumped: (ailist, trainerrs, valierrs)
+    '''
+    If validation cost decrease but performance worsen, then there should be a problem.
+    The only difference is hidden layer number; validation set no change, so cost can be compared.
+    '''
+    trainnum = 10000
+    trainset = gamegen_partial(trainnum, algs=perfectalg)
+    valiset = gamegen_partial(trainnum//4, algs=perfectalg)
+    ini = 10
+    step = 4
+    num = 9
+    hiddenslist = [ini + step * i for i in range(num)]
+    ailist = [[] for i in range(num)]
+    trainerrs = [[] for i in range(num)]
+    valierrs = [[] for i in range(num)]
+    checkreslist = [[] for i in range(num)]
+    winrate = [[] for i in range(num)]
+    t = timer()
+    while True:
+        try:
+            with t:
+                for i, hidden in enumerate(hiddenslist):
+                    ai = ann_ai.ann_ai(val_hidden=hidden)
+                    minres = ai.train(trainset)
+                    trainerrs[i].append(minres.fun)
+                    cost = ai.getcost(valiset)
+                    valierrs[i].append(cost)
+                    checkres = randomcheck(ai)
+                    checkreslist[i].append(checkres)
+                    winrate[i].append(checkres[0]/10000)
+                    ailist[i].append(ai)
+        except KeyboardInterrupt:
+            break
+    trainmean = [mean(t) for t in trainerrs]
+    valimean = [mean(v) for v in valierrs]
+    winratemean = [mean(r) for r in winrate]
+    p1, p2, p3 = plt.plot(hiddenslist, trainmean), plt.plot(hiddenslist, valimean), plt.plot(hiddenslist, winratemean)
+    plt.legend((p1[0], p2[0], p3[0]), ('train', 'validate', 'win rate'))
+    plt.show()
+    interact(local=locals())
+
+
+
+
+
+
 '''
 Test for different features!
 With different features, comparing error is meaningless, isn't it..?
     Or maybe no, error just describes how well the model can predict final result
+    So as long as dataset is produced in same way, the cost would be comparable.
 One point: if feature different, suitable hidden layer should be different!
 '''
 def r8(*features):
-    ini = 5
+    ini = 6
     step = 2
-    num = 3
+    num = 5
     trainerrs = [[[] for i in range(num)] for i in range(len(features))]
     validateerrs = [[[] for i in range(num)] for i in range(len(features))]
     t = timer()
     hiddenslist = [ini + step * i for i in range(num)]
-    trainnum = 1000
+    trainnum = 10000
     while True:
         try:
             with t:
-                trainset = ttthelper.gamegen(trainnum, algs=ttthelper.randomstep)
-                validateset = ttthelper.gamegen(trainnum//4, algs=ttthelper.randomstep)
+                trainset = gamegen_policy(trainnum)
+                validateset = gamegen_policy(trainnum//4)
                 for i, hidden in enumerate(hiddenslist):
                     for f, feature in enumerate(features):
-                        ai = ann_ai.ann_ai(val_hidden=hidden, feature=feature)
+                        ai = ann_ai.ann_ai(pol_hidden=hidden, feature=feature)
                         minres = ai.train(trainset)
                         trainerrs[f][i].append(minres.fun)
                         cost = ai.getcost(validateset)
                         validateerrs[f][i].append(cost)
+                    print('hidden layer %d done in %s' % (hidden, t()))
         except KeyboardInterrupt:
             break
     trainp, valip = [], []
     for train, validate, feature in zip(trainerrs, validateerrs, features):
-        trainerrmean = [mean(thiserr) for thiserr in train]
+        #trainerrmean = [mean(thiserr) for thiserr in train]
         validateerrmean = [mean(thiserr) for thiserr in validate]
-        trainp.append(plt.plot([ini + step * i for i in range(num)], trainerrmean)[0])
+        #trainp.append(plt.plot([ini + step * i for i in range(num)], trainerrmean)[0])
         valip.append(plt.plot([ini + step * i for i in range(num)], validateerrmean)[0])
-    plt.legend(trainp + valip, ['%s: Train' % str(f) for f in features] + ['%s: Validate' % str(f) for f in features])
+
+    plt.legend(valip, ['%s: Validate' % str(f) for f in features])
     plt.show()
     interact(local=locals())
 
@@ -415,9 +566,9 @@ def gamegen_policy(boardnum):
         ans.append(mv)
     return data, ans
 
-def r9_single(hidden=22):
-    dataset = gamegen_policy(40000)
-    ai = ann_ai.ann_ai(pol_hidden=hidden, feature=['board', 'winpt'])
+def r9_single(hidden=40):
+    dataset = gamegen_policy(30000)
+    ai = ann_ai.ann_ai(pol_hidden=hidden, feature=['board', 'nextplayer'])
     minres = ai.train(dataset)
     print('training completed')
     print(completecheck(ai.getstep))
@@ -426,9 +577,9 @@ def r9_single(hidden=22):
 
 def r9(number=3):
     t = timer()
-    ini = 32
+    ini = 10
     step = 2
-    num = 2
+    num = 5
     boardnum = 40000
     traindataset = gamegen_policy(boardnum)
     validataset = gamegen_policy(boardnum // 4)
@@ -444,7 +595,7 @@ def r9(number=3):
         try:
             with t:
                 for i, hidden in enumerate(hiddenlist):
-                    ai = ann_ai.ann_ai(pol_hidden=hidden, feature=['board'])
+                    ai = ann_ai.ann_ai(pol_hidden=hidden, feature=['board', 'nextplayer'])
                     minres = ai.train(traindataset)
                     trainerrs[i].append(minres.fun)
                     cost = ai.getcost(validataset)
@@ -464,4 +615,5 @@ def r9(number=3):
 
 
 if __name__ == '__main__':
-    r9()
+    r4_2d()
+    #r8(['board'], ['board', 'winpt'], ['board', 'nextplayer'])

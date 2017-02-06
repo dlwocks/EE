@@ -41,6 +41,9 @@ class ann_ai(base_ai):
         else:
             raise NotImplementedError
 
+    def __call__(self, board, ainum, step):
+        return self.getstep(board, ainum, step)
+
     #@profile
     def getstep(self, board, ainum, step):
         if self.USE_VAL and self.USE_POL:

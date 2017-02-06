@@ -125,4 +125,8 @@ def perfectalg(board, ainum, turn, rndfrombest=False):
     for i, j in f([(0, 1), (1, 0), (1, 2), (2, 1)], 4):
         if board[i][j] == 0:
             return i, j
-    assert False
+    assert False, board
+
+
+def perfectalg_r(board, ainum, step):
+    return perfectalg(board, ainum, step, rndfrombest=True)

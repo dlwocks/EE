@@ -7,19 +7,20 @@ from timeit import timeit
 setup = '''
 from __main__ import ann
 from numpy import array, sin, abs
+from random import uniform
 def target(inp):
     return abs(sin(4 * inp) / 4 / inp)
-
-inp = array([[(i+0.1)/10] for i in range(8)])
+inp = array([[(i+0.1)/10] for i in range(5)])
 ans = target(inp)
 '''
 code = '''
-a = ann([1, 2, 1])
+a = ann([1, 4, 1])
 a.train(inp, ans)
 '''
-timeit(code,setup=setup, number=10)
+timeit(code,setup=setup, number=100)
 
 # Commit 177557785f620ef51d7671e9434d5af6d63ed999: cythonann takes 20.s
+# Commit 75fc33f841e125eb6260f316746889c50ae2ab88: 3.s
 
 
 ####################################################################################

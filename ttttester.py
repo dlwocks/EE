@@ -17,11 +17,11 @@ import logging as log
 from itertools import product, repeat
 from numpy import array
 from copy import copy, deepcopy
-from random import randint
+from random import randint, shuffle
 from code import interact
 
 from ai import perfectalg
-from ttthelper import printboard, randomstep
+from ttthelper import printboard, randomstep, emptyspace_pos
 from tttbase import isend
 
 global count
@@ -105,13 +105,11 @@ def complete_check(algorithm=perfectalg, pt=False):
         print('Algorithm Evaluation Point:%0.2f' % aep)
     return round(aep, 2), count['AI'], count['Draw'], count['Iterator']
 
+
 def completecheck(algorithm=perfectalg, pt=False):
     return complete_check(algorithm, pt)
 
 def randomcheck(algorithm, gamenum=10000):
-    '''
-    algorithm always starts first. IOW, algorithm is an odd player
-    '''
     win = 0
     draw = 0
     lose = 0
@@ -122,19 +120,25 @@ def randomcheck(algorithm, gamenum=10000):
         while step < 10:
             if step % 2:
                 called = algorithm if i < gamenum // 2 else randomstep
-                i, j = called(board, 1, step)
+                y, x = called(board, 1, step)
             else:
                 called = algorithm if i >= gamenum // 2 else randomstep
-                i, j = called(board, 2, step)
-            board[i][j] = step
+                y, x = called(board, 2, step)
+            board[y][x] = step
             step += 1
             if 10 >= step >= 6:
                 end = isend(board, step)
                 if end == 1:
-                    win += 1
+                    if i < gamenum // 2:
+                        win += 1
+                    else:
+                        lose += 1
                     break
                 elif end == 0:
-                    lose += 1
+                    if i < gamenum // 2:
+                        lose += 1
+                    else:
+                        win += 1
                     break
                 elif end == 0.5:
                     draw += 1
@@ -176,6 +180,29 @@ def play_with(algorithm, playerfirst=True):
         step += 1
 
 
+def optvalue(board, ainum, step):
+    end = isend(board, step)
+    board = deepcopy(board)
+    while end is None:
+        i, j = perfectalg(board, (step+1) % 2 + 1, step)
+        board[i][j] = step
+        step += 1
+        end = isend(board, step)
+    return end
+
+
+def optai(board, ainum, step, pt=False):
+    board = deepcopy(board)
+    mi, mj, mout = 0, 0, float('-inf') if ainum % 2 else float('inf')
+    for nextboard, i, j in emptyspace_pos(board, step, rnd=False):
+        out = optvalue(nextboard, step % 2 + 1, step + 1)
+        if pt:
+            print('optvalue for %d, %d: %f' % (i, j, out))
+        if ainum % 2 == 1 and out > mout:
+            mi, mj, mout = i, j, out
+        elif ainum % 2 == 0 and out < mout:
+            mi, mj, mout = i, j, out
+    return mi, mj
 
 
 if __name__ == '__main__':
