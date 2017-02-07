@@ -173,14 +173,14 @@ def r4():
     if fileexist:
         print('dumped file found')
         with open('r4.dump', 'rb') as o:
-            trainerrs, validateerrs, setup = pickle.load(o)
+            trainerrs, valierrs, setup = pickle.load(o)
     if not fileexist:
         trainerrs = [[] for i in range(num)]
-        validateerrs = [[] for i in range(num)]
+        valierrs = [[] for i in range(num)]
     if fileexist and setup != (ini, step, num):
         input('Setup doesn\'t match. You sure continue?')
         trainerrs = [[] for i in range(num)]
-        validateerrs = [[] for i in range(num)]
+        valierrs = [[] for i in range(num)]
     t = timer()
     hiddenslist = [ini + step * i for i in range(num)]
     trainnum = 1000
@@ -194,18 +194,18 @@ def r4():
                     minres = ai.train(trainset, pt=False)
                     trainerrs[i].append(minres.fun)
                     cost = ai.getcost(validateset)
-                    validateerrs[i].append(cost)
+                    valierrs[i].append(cost)
         except KeyboardInterrupt:
             break
-    trainerrmean = [min(thiserr) for thiserr in trainerrs]
-    validateerrmean = [min(thiserr) for thiserr in validateerrs]
+    trainerrmean = [mean(thiserr) for thiserr in trainerrs]
+    valierrmean = [mean(thiserr) for thiserr in valierrs]
     p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
-    p2 = plt.plot([ini + step * i for i in range(num)], validateerrmean)
+    p2 = plt.plot([ini + step * i for i in range(num)], valierrmean)
     plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
     plt.show()
     with open('r4.dump', 'wb') as o:
         setup = (ini, step, num)
-        pickle.dump((trainerrs, validateerrs, setup), o)
+        pickle.dump((trainerrs, valierrs, setup), o)
     interact(local=locals())
 
 def r4_l(seclayer=10):
@@ -213,7 +213,7 @@ def r4_l(seclayer=10):
     step = 2
     num = 5
     trainerrs = [[] for i in range(num)]
-    validateerrs = [[] for i in range(num)]
+    valierrs = [[] for i in range(num)]
     t = timer()
     hiddenslist = [ini + step * i for i in range(num)]
     trainnum = 1000
@@ -227,13 +227,13 @@ def r4_l(seclayer=10):
                     minres = ai.train(trainset, pt=False)
                     trainerrs[i].append(minres.fun)
                     cost = ai.getcost(validateset)
-                    validateerrs[i].append(cost)
+                    valierrs[i].append(cost)
         except KeyboardInterrupt:
             break
     trainerrmean = [min(thiserr) for thiserr in trainerrs]
-    validateerrmean = [min(thiserr) for thiserr in validateerrs]
+    valierrmean = [min(thiserr) for thiserr in valierrs]
     p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
-    p2 = plt.plot([ini + step * i for i in range(num)], validateerrmean)
+    p2 = plt.plot([ini + step * i for i in range(num)], valierrmean)
     plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
     plt.show()
     interact(local=locals())
@@ -288,14 +288,14 @@ def r5(ini=1000, step=1000, num=10):
     if fileexist:
         print('dumped file found')
         with open('r5.dump', 'rb') as o:
-            trainerrs, validateerrs, setup = pickle.load(o)
+            trainerrs, valierrs, setup = pickle.load(o)
     if not fileexist:
         trainerrs = [[] for i in range(num)]
-        validateerrs = [[] for i in range(num)]
+        valierrs = [[] for i in range(num)]
     if fileexist and setup != (ini, step, num):
         input('Setup doesn\'t match. You sure continue?')
         trainerrs = [[] for i in range(num)]
-        validateerrs = [[] for i in range(num)]  
+        valierrs = [[] for i in range(num)]  
     OPTIMAL_LAYERNUM = 8
     t = timer()
     gamenumlist = [ini + step * i for i in range(num)]
@@ -308,21 +308,21 @@ def r5(ini=1000, step=1000, num=10):
                     ai = ann_ai.ann_ai(val_hidden=[OPTIMAL_LAYERNUM], pol_hidden=None, feature=['board'])
                     minres = ai.train(trainset, pt=False)
                     trainerrs[i].append(minres.fun)  # 2 as from gamegen(ini//`2`)
-                    validateerrs[i].append(ai.getcost(validateset))
+                    valierrs[i].append(ai.getcost(validateset))
             print('Single: %s   Acc: %s   Num: %s' % (t.time, t.acc, t.num))
         except KeyboardInterrupt:
             break
     trainerrmean = [mean(thiserr) for thiserr in trainerrs]
-    validateerrmean = [mean(thiserr) for thiserr in validateerrs]
+    valierrmean = [mean(thiserr) for thiserr in valierrs]
     p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
-    p2 = plt.plot([ini + step * i for i in range(num)], validateerrmean)
+    p2 = plt.plot([ini + step * i for i in range(num)], valierrmean)
     plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
     plt.show()
-    plt.plot([ini + step * i for i in range(num)], np.array(validateerrmean) - np.array(trainerrmean))
+    plt.plot([ini + step * i for i in range(num)], np.array(valierrmean) - np.array(trainerrmean))
     plt.show()
     with open('r5.dump', 'wb') as o:
         setup = (ini, step, num)
-        pickle.dump((trainerrs, validateerrs, setup), o)
+        pickle.dump((trainerrs, valierrs, setup), o)
     interact(local=locals())
 
 
@@ -336,20 +336,20 @@ def r6(ini=0, step=0.02, num=30):
     if fileexist:
         print('dumped file found')
         with open('r6.dump', 'rb') as o:
-            trainerrs, validateerrs, setup = pickle.load(o)
+            trainerrs, valierrs, setup = pickle.load(o)
     if not fileexist:
         trainerrs = [[] for i in range(num)]
-        validateerrs = [[] for i in range(num)]
+        valierrs = [[] for i in range(num)]
     if fileexist and setup != (ini, step, num):
         input('Setup doesn\'t match. You sure continue?')
         trainerrs = [[] for i in range(num)]
-        validateerrs = [[] for i in range(num)]  
+        valierrs = [[] for i in range(num)]  
     GAMENUM = 500
     OPTLAYER = 9
     t = timer()
     reglist = [ini + step * i for i in range(num)]
     trainerrs = [[] for i in range(num)]
-    validateerrs = [[] for i in range(num)]
+    valierrs = [[] for i in range(num)]
     while True:
         try:
             with t:
@@ -359,13 +359,13 @@ def r6(ini=0, step=0.02, num=30):
                     ai = ann_ai.ann_ai(val_hidden=[OPTLAYER], pol_hidden=None, feature=['board'], reg=reg)
                     minres = ai.train(trainset, pt=False)
                     trainerrs[i].append(minres.fun)
-                    validateerrs[i].append(ai.getcost(validateset))
+                    valierrs[i].append(ai.getcost(validateset))
             print('Single: %s   Acc: %s   Num: %s' % (t.time, t.acc, t.num))
         except KeyboardInterrupt:
             break
     with open('r6.dump', 'wb') as o:
         setup = (ini, step, num)
-        pickle.dump((trainerrs, validateerrs, setup), o)
+        pickle.dump((trainerrs, valierrs, setup), o)
     interact(local=locals())
 
 '''
@@ -381,33 +381,33 @@ def r7():
     tempai.train(tempdataset)
     dataset3 = gamegen_partial(boardnum, algs=tempai.getstep)
     print('randomstep:')
-    print(completecheck(randomstep), randomcheck(randomstep))
+    print(randomcheck(randomstep))
     print('slightly educated ai:')
-    print(completecheck(tempai.getstep), randomcheck(tempai.getstep))
+    print(randomcheck(tempai.getstep))
     dataset4 = [], []
-    for i in range(100):
+    for i in range(1000):
         tempdataset = gamegen(100)
         tempai = ann_ai(val_hidden=11)
         tempai.train(tempdataset)
-        dataset4 = adddataset(dataset4, gamegen_partial(boardnum//100, algs=tempai.getstep))
+        dataset4 = adddataset(dataset4, gamegen_partial(boardnum//1000, algs=tempai.getstep))
     airnd = ann_ai(val_hidden=11)
     aipft = ann_ai(val_hidden=11)
     aised = ann_ai(val_hidden=11)
     aiseds = ann_ai(val_hidden=11)
     airnd.train(dataset1)
     print('ai trained with random dataset:')
-    print(completecheck(airnd.getstep), randomcheck(airnd.getstep))
+    print(randomcheck(airnd.getstep))
     aipft.train(dataset2)
     print('ai trained with perfect dataset:')
-    print(completecheck(aipft.getstep), randomcheck(aipft.getstep))
+    print(randomcheck(aipft.getstep))
     aised.train(dataset3)
     print('ai trained with slightly educated dataset:')
-    print(completecheck(aised.getstep), randomcheck(aised.getstep))
+    print(randomcheck(aised.getstep))
     aiseds.train(dataset4)
     print('ai trained with multiple slightly educated dataset:')
-    print(completecheck(aiseds.getstep), randomcheck(aiseds.getstep))
+    print(randomcheck(aiseds.getstep))
     print('perfect ai:')
-    print(completecheck(perfectalg), randomcheck(perfectalg))
+    print(randomcheck(perfectalg))
     print('\a')
     interact(local=locals())
 
@@ -451,6 +451,7 @@ def r7_3():
     '''
     If validation cost decrease but performance worsen, then there should be a problem.
     The only difference is hidden layer number; validation set no change, so cost can be compared.
+    ^but it fact it was the lower cost to the *imperfect* algorithm
     '''
     trainnum = 10000
     trainset = gamegen_partial(trainnum, algs=perfectalg)
@@ -489,8 +490,49 @@ def r7_3():
     interact(local=locals())
 
 
+def r7_4(boardnum=10000, trialnum=None, hidden=11):
+    '''
+    Slightly educated dataset?
+    '''
+    t = timer()
+    rndrec = []
+    sedrec = []
+    tempai_game = 500
+    if trialnum is None:
+        it = itertools.count()
+    else:
+        it = range(trialnum)
+    for i in it:
+        try:
+            with t:
+                rnddataset = gamegen_partial(boardnum)
+                rndai = ann_ai.ann_ai(val_hidden=hidden)
+                rndai.train(rnddataset)
+                rndrec.append(randomcheck(rndai))
+                print('rndai done in', t())
+                sedataset = [], []
+                for i in range(1000):
+                    tempdataset = gamegen(tempai_game)
+                    tempai = ann_ai.ann_ai(val_hidden=hidden)
+                    tempai.train(tempdataset)
+                    sedataset = adddataset(sedataset, gamegen_partial(boardnum//1000, algs=tempai.getstep))
+                print('sedataset created in', t())
+                sedai = ann_ai.ann_ai(val_hidden=hidden)
+                sedai.train(sedataset)
+                sedrec.append(randomcheck(sedai))
+                print('sedai done in', t())
+        except KeyboardInterrupt:
+            break
+    rndrec_arr = np.array(rndrec)
+    sedrec_arr = np.array(sedrec)
+    #dumped: rndrec_arr, sedrec_arr, (boradnum, hidden, tempai_board)
+    print('boardnum:', boardnum)
+    print('random // sli.edu.  (Win/Draw/Lose)')
+    for i in range(3):
+        print('%d±%0.0f // %d±%0.0f' % (mean((rndrec_arr.T)[i]), stdev((rndrec_arr.T)[i]),
+                                        mean((sedrec_arr.T)[i]), stdev((sedrec_arr.T)[i])))
 
-
+    interact(local=locals())
 
 
 '''
@@ -502,37 +544,41 @@ One point: if feature different, suitable hidden layer should be different!
 '''
 def r8(*features):
     ini = 6
-    step = 2
-    num = 5
+    step = 1
+    num = 10
     trainerrs = [[[] for i in range(num)] for i in range(len(features))]
-    validateerrs = [[[] for i in range(num)] for i in range(len(features))]
+    valierrs = [[[] for i in range(num)] for i in range(len(features))]
+    rndcheckrec = [[[] for i in range(num)] for i in range(len(features))]
     t = timer()
     hiddenslist = [ini + step * i for i in range(num)]
-    trainnum = 10000
+    trainnum = 1000
     while True:
         try:
             with t:
-                trainset = gamegen_policy(trainnum)
-                validateset = gamegen_policy(trainnum//4)
+                trainset = gamegen(trainnum)
+                validateset = gamegen(trainnum//4)
                 for i, hidden in enumerate(hiddenslist):
                     for f, feature in enumerate(features):
-                        ai = ann_ai.ann_ai(pol_hidden=hidden, feature=feature)
+                        ai = ann_ai.ann_ai(val_hidden=hidden, feature=feature)
                         minres = ai.train(trainset)
                         trainerrs[f][i].append(minres.fun)
                         cost = ai.getcost(validateset)
-                        validateerrs[f][i].append(cost)
+                        valierrs[f][i].append(cost)
+                        rndcheckrec[f][i].append(randomcheck(ai))
                     print('hidden layer %d done in %s' % (hidden, t()))
         except KeyboardInterrupt:
             break
     trainp, valip = [], []
-    for train, validate, feature in zip(trainerrs, validateerrs, features):
-        #trainerrmean = [mean(thiserr) for thiserr in train]
-        validateerrmean = [mean(thiserr) for thiserr in validate]
-        #trainp.append(plt.plot([ini + step * i for i in range(num)], trainerrmean)[0])
-        valip.append(plt.plot([ini + step * i for i in range(num)], validateerrmean)[0])
-
+    for validate, feature in zip(valierrs, features):
+        valierrmean = [mean(thiserr) for thiserr in validate]
+        valip.append(plt.plot([ini + step * i for i in range(num)], valierrmean)[0])
     plt.legend(valip, ['%s: Validate' % str(f) for f in features])
     plt.show()
+    checkp = []
+    for check, feature in zip(valierrs, features):
+        check = [(np.array(c).T[0] - np.array(c).T[2]).mean()/10000 for c in check]
+        checkp.append(plt.plot(hiddenslist, valierrmean)[0])
+    plt.legend(checkp, ['%s: WR-LR' % str(f) for f in features])
     interact(local=locals())
 
 '''
@@ -605,14 +651,14 @@ def r9(number=3):
         except KeyboardInterrupt:
             break
     trainerrmean = [mean(thiserr) for thiserr in trainerrs]
-    validateerrmean = [mean(thiserr) for thiserr in valierrs]
+    valierrmean = [mean(thiserr) for thiserr in valierrs]
     p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
-    p2 = plt.plot([ini + step * i for i in range(num)], validateerrmean)
+    p2 = plt.plot([ini + step * i for i in range(num)], valierrmean)
     plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
     plt.show()
     interact(local=locals())
 
 
 if __name__ == '__main__':
-    r4_2d()
+    r7_4()
     #r8(['board'], ['board', 'winpt'], ['board', 'nextplayer'])
