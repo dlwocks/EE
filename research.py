@@ -75,24 +75,46 @@ Thus, this script **tries to find maximum AEP that could be get from the trainin
 The highest AEP observed is: 92.77 (6000 game, 9 hidden)
 The perfect one has AEP of: 91.89
 '''
-def r1(gamenum=2000, hidden=[9], feature=['board']):  # thesre are the specific config.
+def r1(gamenum=1000, hidden=[9], feature=['board'], trialnum=None):  # thesre are the specific config.
     t = timer()
     if isinstance(hidden, int):
         hidden = [hidden]
     allptrec = []
-    while True:
+    if trialnum is None:
+        it = count()
+    else:
+        it = range(trialnum)
+    for i in it:
         try:
             with t:
                 dataset = ttthelper.gamegen(gamenum, algs=[ttthelper.randomstep] * 2)
                 ai = ann_ai.ann_ai(val_hidden=hidden, pol_hidden=None, feature=['board'])
                 ai.train(dataset, pt=False)
-                pt = ttttester.complete_check(ai.getstep)[0]
-            allptrec.append(pt)
+                rndnum = 1000
+                rndcheck = ttttester.randomcheck(ai.getstep, gamenum=rndnum)
+                allptrec.append((rndcheck[0] + 0.5 * rndcheck[1]) / rndnum)
         except KeyboardInterrupt:
             break
     if len(allptrec) >= 10:
         plt.hist(allptrec)
         plt.show()
+    # Dumped: allptrec
+    interact(local=locals())
+
+def r1_1():
+    rndptrec = []
+    pftptrec = []
+    t = timer()
+    gamenum = 1000
+    for i in range(100):
+        with t:
+            rndcheck = ttttester.randomcheck(randomstep, gamenum=gamenum)
+            rndptrec.append((rndcheck[0] + 0.5 * rndcheck[1]) / gamenum)
+            pftcheck = ttttester.randomcheck(perfectalg, gamenum=gamenum)
+            pftptrec.append((pftcheck[0] + 0.5 * pftcheck[1]) / gamenum)
+    print('randomstep:%f±%f' % (mean(rndptrec), stdev(rndptrec)))
+    print('perfectalg:%f±%f' % (mean(pftptrec), stdev(pftptrec)))
+    # Dumped: rndptrec, pftptrec
     interact(local=locals())
 
 
@@ -113,9 +135,8 @@ def r2(ini=1000, step=1000, num=10):  # inis for gamenum
                     dataset = ttthelper.gamegen(gamenum, algs=[ttthelper.randomstep] * 2)
                     ai = ann_ai.ann_ai(val_hidden=[9], pol_hidden=None, feature=['board'])
                     ai.train(dataset, pt=False)
-                    pt = ttttester.complete_check(ai.getstep)
-                    ptrec[i].append(pt)
-            print('One iteration done in %s' % t())
+                    check = ttttester.randomcheck(ai.getstep, gamenum=1000)
+                    ptrec[i].append(check[0])
         except KeyboardInterrupt:
             break
     ptrecmean = [mean(thisrec) for thisrec in ptrec]
@@ -169,18 +190,10 @@ def r4():
     ini = 1
     step = 1
     num = 20
-    fileexist = os.path.exists('r4.dump')
-    if fileexist:
-        print('dumped file found')
-        with open('r4.dump', 'rb') as o:
-            trainerrs, valierrs, setup = pickle.load(o)
-    if not fileexist:
-        trainerrs = [[] for i in range(num)]
-        valierrs = [[] for i in range(num)]
-    if fileexist and setup != (ini, step, num):
-        input('Setup doesn\'t match. You sure continue?')
-        trainerrs = [[] for i in range(num)]
-        valierrs = [[] for i in range(num)]
+    trainerrs = [[] for i in range(num)]
+    valierrs = [[] for i in range(num)]
+    rndcheckrec = [[] for i in range(num)]
+    wrprec = [[] for i in range(num)]
     t = timer()
     hiddenslist = [ini + step * i for i in range(num)]
     trainnum = 1000
@@ -195,17 +208,20 @@ def r4():
                     trainerrs[i].append(minres.fun)
                     cost = ai.getcost(validateset)
                     valierrs[i].append(cost)
+                    check = randomcheck(ai, gamenum=1000)
+                    rndcheckrec[i].append(check)
+                    wrprec[i].append((check[0]+check[1]*0.5)/1000)
         except KeyboardInterrupt:
             break
     trainerrmean = [mean(thiserr) for thiserr in trainerrs]
     valierrmean = [mean(thiserr) for thiserr in valierrs]
+    wrprecmean = [mean(thiswrp) for thiswrp in wrprec]
     p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
     p2 = plt.plot([ini + step * i for i in range(num)], valierrmean)
+    p3 = plt.plot([ini + step * i for i in range(num)], wrprecmean)
     plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
     plt.show()
-    with open('r4.dump', 'wb') as o:
-        setup = (ini, step, num)
-        pickle.dump((trainerrs, valierrs, setup), o)
+    # dumped: trainerrs, valierrs, trainnum, (ini, step, num)
     interact(local=locals())
 
 def r4_l(seclayer=10):
@@ -268,6 +284,7 @@ def r4_2d():
     for i, hiddenerrmean in enumerate(valierrmean):
         p = plt.plot([ini + step * i for i in range(num)], valierrmean[i])
         temp.append(p[0])
+    # dumped: (trainerrs, valierrs, (ini,step,num))
     plt.legend(temp, ['1st hid: %s' % str(h) for h in hiddenslist])
     plt.show()
     interact(local=locals())
@@ -295,7 +312,7 @@ def r5(ini=1000, step=1000, num=10):
     if fileexist and setup != (ini, step, num):
         input('Setup doesn\'t match. You sure continue?')
         trainerrs = [[] for i in range(num)]
-        valierrs = [[] for i in range(num)]  
+        valierrs = [[] for i in range(num)]
     OPTIMAL_LAYERNUM = 8
     t = timer()
     gamenumlist = [ini + step * i for i in range(num)]
@@ -490,14 +507,14 @@ def r7_3():
     interact(local=locals())
 
 
-def r7_4(boardnum=10000, trialnum=None, hidden=11):
+def r7_4(boardnum=10000, trialnum=None, hidden=9):
     '''
     Slightly educated dataset?
     '''
     t = timer()
     rndrec = []
     sedrec = []
-    tempai_game = 500
+    tempai_game = 200
     if trialnum is None:
         it = itertools.count()
     else:
@@ -512,6 +529,8 @@ def r7_4(boardnum=10000, trialnum=None, hidden=11):
                 print('rndai done in', t())
                 sedataset = [], []
                 for i in range(1000):
+                    if i % 100 == 0:
+                        print('sedataset done %d/1000 at' % i, t())
                     tempdataset = gamegen(tempai_game)
                     tempai = ann_ai.ann_ai(val_hidden=hidden)
                     tempai.train(tempdataset)
@@ -533,7 +552,6 @@ def r7_4(boardnum=10000, trialnum=None, hidden=11):
                                         mean((sedrec_arr.T)[i]), stdev((sedrec_arr.T)[i])))
 
     interact(local=locals())
-
 
 '''
 Test for different features!
@@ -575,10 +593,12 @@ def r8(*features):
     plt.legend(valip, ['%s: Validate' % str(f) for f in features])
     plt.show()
     checkp = []
-    for check, feature in zip(valierrs, features):
-        check = [(np.array(c).T[0] - np.array(c).T[2]).mean()/10000 for c in check]
+    for check, feature in zip(rndcheckrec, features):
+        check = [(np.array(c).T[0] - np.array(c).T[2]).mean()/1000 for c in check]
         checkp.append(plt.plot(hiddenslist, valierrmean)[0])
     plt.legend(checkp, ['%s: WR-LR' % str(f) for f in features])
+    plt.show()
+    # Dumped:trainerrs, valierrs, rndcheckrec, features, trainnum, (ini, step, num)
     interact(local=locals())
 
 '''
@@ -659,6 +679,13 @@ def r9(number=3):
     interact(local=locals())
 
 
+'''
+Using gamegen_pftlabel..
+1. With same boardnum, how strong the AI can be when compared to using gamegen_partial? (r7)
+2. With same boardnum, what is the optimal hidden layer number? (r4)
+3. By increasing boardnum, how does validate error decrease/performance increase? (r5)
+'''
+
+
 if __name__ == '__main__':
-    r7_4()
-    #r8(['board'], ['board', 'winpt'], ['board', 'nextplayer'])
+    r4()

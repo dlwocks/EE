@@ -1,18 +1,19 @@
 from itertools import product
-from ai import perfectalg
+from ai import perfectalg, label
 import random
 from numpy import array
 from code import interact
 from random import randint, shuffle
 from tttbase import isend, flatten, deflatten
+from copy import deepcopy
 
-def printboard(board, signmap={0: "+", 1: "O", 2: "X"}, hspace='-'):
+def printboard(board, signmap=lambda n: '+' if n==0 else 'O' if n%2 else 'X', hspace='-'):
     '''
     Board printer.
-    '''
+    '''     
     ret = '\n'
     for y, x in product(range(len(board)), range(len(board[0]))):
-        ret += str(signmap[board[y][x]]) if signmap else str(board[y][x])
+        ret += str(signmap(board[y][x])) if signmap else str(board[y][x])
         ret += '\n' if x == len(board[0])-1 else hspace
     return ret
 
@@ -104,8 +105,8 @@ def gamegen_partial(gamenum, algs=[perfectalg] * 2, args=()):
                 end = isend(board, step+1)
         rndstep = randint(1, step)
         board = gen_piece(board, retmid=rndstep)
-        data.append(board.copy())
-        board = deflatten(board)
+        data.append(board)
+        board = deflatten(board) # create new copy, no the one appended in data need no copy
         end = isend(board, rndstep+1)
         step = rndstep
         shuffle(algs)
@@ -116,6 +117,25 @@ def gamegen_partial(gamenum, algs=[perfectalg] * 2, args=()):
             if step >= 5:
                 end = isend(board, step+1)
         ans.append(end)
+    return data, ans
+
+
+def gamegen_pftlabel(boardnum):
+    data, ans = [], []
+    for i in range(boardnum):
+        board = [[0 for i in range(3)]for i in range(3)]
+        end = None
+        step = 0
+        while end is None:
+            step += 1
+            i, j = randomstep(board)
+            board[i][j] = step
+            if step >= 5:
+                end = isend(board, step+1)
+        rndstep = randint(1, step)
+        board = gen_piece(board, retmid=rndstep)
+        data.append(board)
+        ans.append(label(deflatten(board), rndstep+1))
     return data, ans
 
 

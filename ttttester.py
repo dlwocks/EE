@@ -153,7 +153,6 @@ def _board(board):
 def play_with(algorithm, playerfirst=True):
     board = [[0 for i in range(3)]for i in range(3)]
     ainum = 2 if playerfirst else 1
-    end = 0
     step = 1
     while step < 10:
         print(printboard(_board(board)))
@@ -179,23 +178,77 @@ def play_with(algorithm, playerfirst=True):
                 break
         step += 1
 
+def play_against(algs):
+    board = [[0 for i in range(3)]for i in range(3)]
+    ainum = 1
+    step = 1
+    while step < 10:
+        print(printboard(_board(board)))
+        i, j = algs[0 if step % 2 else 1](board, ainum, step)
+        print('%s made its move at %d, %d' % (algs[0 if step % 2 else 1].__name__, i, j))
+        board[i][j] = step
+        if 9 >= step >= 5:
+            end = isend(board, step+1)
+            if end is not None:
+                if end == 0.5:
+                    print('the game ended in draw.')
+                elif end % 2:
+                    print('%s wins the game.' % algs[0].__name__)
+                else:
+                    print('%s wins the game.' % algs[1].__name__)
+                print(printboard(_board(board)))
+                break
+        step += 1
 
-def optvalue(board, ainum, step):
+def distinguisher(algs):
+    '''
+    for randomcheck, what lead to different res
+    '''
+    from itertools import count
+    for i in count():
+        bd = [[0, 0, 0] for i in range(3)]
+        step = 1
+        end = None
+        ainum = 1 if i % 2 else 2
+        while step < 10:
+            if step % 2 == ainum % 2:
+                y1, x1 = algs[0](bd, (step+1)%2+1, step)
+                y2, x2 = algs[1](bd, (step+1)%2+1, step)
+                if y1 != y2 or x1 != x2:
+                    print('diff detected')
+                    print(printboard(bd))
+                    print('choice of %s: %d, %d' % (algs[0], y1, x1))
+                    print('choice of %s: %d, %d' % (algs[1], y2, x2))
+                    interact(local=locals())
+                bd[y1][x1] = step
+            else:
+                y, x = randomstep(bd)
+                bd[y][x] = step
+            step += 1
+            if 10 >= step >= 6:
+                end = isend(bd)
+
+    
+
+def optvalue(board, ainum, step, alg, pt=False):
     end = isend(board, step)
     board = deepcopy(board)
     while end is None:
-        i, j = perfectalg(board, (step+1) % 2 + 1, step)
+        i, j = alg(board, (step+1) % 2 + 1, step)
         board[i][j] = step
         step += 1
         end = isend(board, step)
+    if pt:
+        print(array(board))
     return end
 
-
-def optai(board, ainum, step, pt=False):
+from ai import Abpai
+ai = Abpai()
+def optai(board, ainum, step, pt=False, alg=perfectalg):
     board = deepcopy(board)
     mi, mj, mout = 0, 0, float('-inf') if ainum % 2 else float('inf')
     for nextboard, i, j in emptyspace_pos(board, step, rnd=False):
-        out = optvalue(nextboard, step % 2 + 1, step + 1)
+        out = optvalue(nextboard, step % 2 + 1, step + 1, alg, pt)
         if pt:
             print('optvalue for %d, %d: %f' % (i, j, out))
         if ainum % 2 == 1 and out > mout:

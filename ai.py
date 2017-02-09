@@ -5,7 +5,7 @@ import logging as log
 from itertools import product
 from random import shuffle, sample
 
-from tttbase import isend
+from tttbase import isend, flatten
 
 
 def donothing(x, _):
@@ -130,3 +130,51 @@ def perfectalg(board, ainum, turn, rndfrombest=False):
 
 def perfectalg_r(board, ainum, step):
     return perfectalg(board, ainum, step, rndfrombest=True)
+
+class Abpai():
+    def __init__(self):
+        self._outi = -1
+        self._outj = -1
+        self.posls = [(1, 1), (0, 0), (0, 2), (2, 0), (2, 2), (0, 1), (1, 0), (1, 2), (2, 1)]
+
+    def __call__(self, board, ainum, step):
+        self.abpalg(board, float('-inf'), float('inf'), step, isbase=True)
+        return self._outi, self._outj
+
+    def abpalg(self, board, alpha, beta, step, isbase=False):
+        end = isend(board, step)
+        if end is not None:
+            return end
+        for i, j in self.posls:
+            if board[i][j] != 0:
+                continue
+            board[i][j] = step
+            point = self.abpalg(board, alpha, beta, step + 1)
+            board[i][j] = 0
+            if step % 2: # ismax
+                if point > alpha:
+                    alpha = point
+                    if isbase:
+                        self._outi = i
+                        self._outj = j
+                if alpha >= beta:
+                    break
+            else:
+                if point < beta:
+                    beta = point
+                    if isbase:
+                        self._outi = i
+                        self._outj = j
+                if alpha >= beta:
+                    break
+        if step % 2:
+            return alpha
+        else:
+            return beta
+
+
+def label(board, ainum=None, step=None):
+    if step is None:
+        step = max(flatten(board)) + 1
+    ai = Abpai()
+    return ai.abpalg(board, float('-inf'), float('inf'), step)
