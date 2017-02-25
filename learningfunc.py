@@ -1,33 +1,19 @@
-'''
-Miscellaneous functions and classes related to machine learning.
-'''
-from numpy import array, dot, log, ndarray, append, sqrt, array_equal, zeros_like, isclose, split, squeeze, empty, empty_like
+from numpy import dot, log, sqrt
 import numpy as np
 from random import uniform
-from copy import copy
-from itertools import count, accumulate
+from itertools import accumulate
 from scipy.optimize import minimize
 from scipy.special import expit as sigmoid
-from random import randint, shuffle
-from ttthelper import gen_piece, randomstep
-from ai import perfectalg
-import warnings
 
 '''
 Important definition:
 -In an thetaseg, the first n theta represents 11, 12, 13, ..., 1n;
 that it is for first node in FORMER layer
 '''
-
-INT = "__import__('code').interact(local=locals())"
-
-
-#@profile
 def costfunc(theta, data, ans):
     sig = sigmoid(dot(data, theta))
     return sum(ans * -log(sig) - (1 - ans) * log(1 - sig))
 
-#@profile
 def costfunc_d(theta, data, ans):
     return dot(data.T, (sigmoid(dot(data, theta)) - ans)) / len(theta)
 
@@ -48,13 +34,13 @@ def _thetalen(layernum):
 
 def _rndinit(layernum):
     inpnum = None
-    inittheta = array([])
+    inittheta = np.array([])
     for outnum in layernum:
         if inpnum:
             eps_init = sqrt(6)/sqrt(inpnum+outnum)
-            appendedtheta = array([uniform(-eps_init, eps_init)
+            appendedtheta = np.array([uniform(-eps_init, eps_init)
                                    for i in range((inpnum+1)*outnum)])
-            inittheta = append(inittheta, appendedtheta)
+            inittheta = np.append(inittheta, appendedtheta)
         inpnum = outnum
     return inittheta
 
@@ -64,8 +50,20 @@ NEAR_ONE = np.nextafter(1, -1)
 
 class ann(object):
     def __init__(self, layernum, theta=None, reg=0):
+        '''Initializes the ANN class.
+
+        Args:
+            layernum: A list. Its length would be the number of layer of ANN,
+                nth number in the list would be the number of neuron in corresponding layer.
+            theta: Optional. If given, an np.ndarray. The weight(theta) of ANN is initialized with the value.
+                If not given, theta is initialized randomly.
+            reg: Optional. If given, an integer. Specifies the regularization parameter for the ANN.
+                If not given, reg=0(regularization is not used).
+        Returns:
+            The initialized instance of class ann.
+        '''
         if not isinstance(layernum, list):
-            raise TypeError('param layernum is not list or integer')
+            raise TypeError('param layernum is not list')
         if len(layernum) < 2:
             raise ValueError('param layernum is too small.'
                              'It should at least consist input/output layer')
@@ -77,7 +75,7 @@ class ann(object):
         self.layercount = len(layernum)
         self.cumlayernum = [0] + list(accumulate(layernum))[:-1]
         if theta is not None:
-            if not isinstance(theta, ndarray):
+            if not isinstance(theta, np.ndarray):
                 raise TypeError(
                     'param theta, though inputted, is not an array')
             if len(theta) != self.partialthetalen[-1]:
@@ -88,23 +86,35 @@ class ann(object):
         else:
             self.theta = _rndinit(layernum)
 
-    def _regtheta(self, theta=None):
-        if theta is None:
-            theta = self.theta
-        ret = zeros_like(self.theta)
+    def _regtheta(self):
+        '''Finds the segment of theta to be regularized, leaving theta of bias term as zero.
+        
+        Args:
+            None.
+        Returns:
+            The self.theta where theta connected to bias term is changed to zero.
+        '''
+        ret = np.zeros_like(self.theta)
         temp = 0
         for i, l in enumerate(self.partialthetalen[1:]):
             ret[temp+self.layernum[i+1]: l] = self.theta[temp+self.layernum[i+1]: l]
             temp = l
         return ret
 
-    #@profile
     def fowardprop(self, allinp, theta=None):
+        '''Executes forward propagation. 
+
+        Args: 
+            allinp: A 2-dimensional np.ndarray. The array of input vectors.
+            theta: A 1-dimensional np.ndarray. The weight of the network. If not given, assumed self.theta.
+        Returns:
+            A 2-dimensional np.ndarray, with each row representing all activation in all layer from the corresponding input.
+        '''
         if theta is None:
             theta = self.theta
-        if not isinstance(allinp, ndarray):
+        if not isinstance(allinp, np.ndarray):
             raise TypeError('input is not a ndarray')
-        a = empty((len(allinp), self.unitnum))
+        a = np.empty((len(allinp), self.unitnum))
         for l in range(self.layercount - 1):
             a[:, self.cumlayernum[l]:self.cumlayernum[l+1]] = allinp
             start, end = self.partialthetalen[l], self.partialthetalen[l+1]
@@ -114,11 +124,25 @@ class ann(object):
         a[:, self.cumlayernum[-1]:] = allinp
         return a
 
-    #@profile
     def get(self, inp):
-        return self.fowardprop(array([inp]))[0, self.cumlayernum[-1]:]  # [0]: first inp's output(while there's only one for .get)
+        '''Get forward propagation result for a single input.
+        
+        Args:
+            inp: A 1-dimensional array-like object. The input given.
+        Returns:
+            A 1-dimensional np.ndarray. The output of the network from the input.
+        '''
+        return self.fowardprop(np.array([inp]))[0, self.cumlayernum[-1]:]  # [0]: first inp's output(while there's only one for .get)
 
     def costfunc(self, inp, ans):
+        ''' The cost that the network would get from the given set of input and target output.
+
+        Args:
+            inp: A 2-dimensional np.ndarray. The input.
+            ans: A 2-dimensional np.ndarray. The target output.
+        Return:
+            A float. The cost that the network would get from the given set of input and target output.
+        '''
         assert len(inp) == len(ans)
         out = self.fowardprop(inp, self.theta)[:, self.cumlayernum[-1]:]
         np.place(out, out < NEAR_ZERO, NEAR_ZERO)
@@ -129,8 +153,16 @@ class ann(object):
         cost /= len(ans)
         return cost
 
-    #@profile
     def cost_and_gradient(self, theta, inp, ans):
+        '''The cost and the partial derivative of cost with respect to each weight for the given set  of input and target output.
+
+        Args:
+            theta: A 1-dimensional np.ndarray. The current weight of the network.
+            inp: A 2-dimensional np.ndarray. The input.
+            ans: A 2-dimensional np.ndarray. The target output.
+        Return:
+            A tuple. First item is the cost, second item is a list of partial derivative(gradient).
+        '''
         a = self.fowardprop(inp, theta)  # stands for activations
         out = a[:, self.cumlayernum[-1]:]
         np.place(out, out < NEAR_ZERO, NEAR_ZERO)
@@ -138,7 +170,7 @@ class ann(object):
         cost = (ans * -log(out) - (1 - ans) * log(1 - out)).sum()
         if self.reg:
             cost += self.reg * (self._regtheta()**2).sum() / 2
-        g = zeros_like(theta)
+        g = np.zeros_like(theta)
         ln = self.layernum
         cln = self.cumlayernum
         fillptr = self.totalthetalen
@@ -165,9 +197,17 @@ class ann(object):
         g /= len(ans)
         return cost, g
 
-    #@profile
     def train(self, inp, ans, gtol=1e-5):
-        if not (isinstance(inp, ndarray) and isinstance(ans, ndarray)):
+        '''Minimizes the error on given input(inp) and corresponding target output(ans).
+
+        Args:
+            inp: A 2-dimensional np.ndarray. The input to neural network.
+            ans: A 2-dimensional np.ndarray. The corresponding target output of the given input.
+            gtol: Optional. If given, a float. gradient tolerance in BFGS method. If not given, assumed 1e-5.
+        Return:
+            Minimization Result, which is returned in scipy.optimize.minimize.
+        '''
+        if not (isinstance(inp, np.ndarray) and isinstance(ans, np.ndarray)):
             raise TypeError(str(type(inp)), str(type(ans)))
         if not len(inp.shape) == 2:
             raise ValueError('input is not 2d')

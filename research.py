@@ -213,15 +213,35 @@ def r4():
                     wrprec[i].append((check[0]+check[1]*0.5)/1000)
         except KeyboardInterrupt:
             break
-    trainerrmean = [mean(thiserr) for thiserr in trainerrs]
-    valierrmean = [mean(thiserr) for thiserr in valierrs]
-    wrprecmean = [mean(thiswrp) for thiswrp in wrprec]
+    trainerrmean = [mean(thiserr,ignoremax=2) for thiserr in trainerrs]
+    valierrmean = [mean(thiserr,ignoremax=2) for thiserr in valierrs]
+    #wrprecmean = [mean(thiswrp) for thiswrp in wrprec]
     p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
     p2 = plt.plot([ini + step * i for i in range(num)], valierrmean)
-    p3 = plt.plot([ini + step * i for i in range(num)], wrprecmean)
-    plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
+    #p3 = plt.plot([ini + step * i for i in range(num)], np.array(wrprecmean))
+    plt.legend((p1[0], p2[0]), ('Train Error', 'Validate Error'))
+    plt.xlabel('Number of Hidden Neurons')
+    plt.ylabel('Error(J)')
+    plt.title('Figure 4.6: The Relationship between the Number of Hidden Neuron\n'
+    ' and Train/Validate Error When Training Set is Created With 250 Games')
+    '''
+    fig, ax1 = plt.subplots()
+    p2 = ax1.plot([ini + step * i for i in range(num)], valierrmean)
+    ax1.set_xlabel('Number of Hidden Neurons')
+    ax1.set_ylabel('Error(J)')
+    ax1.tick_params('y', colors='b')
+    ax2 = ax1.twinx()
+    p3 = ax2.plot([ini + step * i for i in range(num)], wrprecmean, 'r')
+    plt.legend((p3[0], p2[0]), ('WRP of AI', 'Validate Error'))
+    ax2.set_ylabel('WRP')
+    ax2.tick_params('y', colors='r')
+    plt.title('Figure 4.2: The Relationship between Validate Error of ANN\n'
+        ' and the Performance of AI')
+    fig.tight_layout()
+    '''
     plt.show()
     # dumped: trainerrs, valierrs, trainnum, (ini, step, num)
+    # for (1000): trainerrs, valierrs, trainnum, wrprec, (ini, step, num)
     interact(local=locals())
 
 def r4_l(seclayer=10):
@@ -255,9 +275,9 @@ def r4_l(seclayer=10):
     interact(local=locals())
 
 def r4_2d():
-    ini = 4
+    ini = 6
     step = 2
-    num = 6
+    num = 5
     trainerrs = [[[] for i in range(num)] for i in range(num)]
     valierrs = [[[] for i in range(num)] for i in range(num)]
     t = timer()
@@ -279,13 +299,17 @@ def r4_2d():
         except KeyboardInterrupt:
             break
     interact(local=locals())
-    valierrmean = [[min(thiserrs) for thiserrs in hiddenerrs] for hiddenerrs in valierrs]
+    valierrmean = [[mean(thiserrs) for thiserrs in hiddenerrs] for hiddenerrs in valierrs]
     temp = []
     for i, hiddenerrmean in enumerate(valierrmean):
         p = plt.plot([ini + step * i for i in range(num)], valierrmean[i])
         temp.append(p[0])
-    # dumped: (trainerrs, valierrs, (ini,step,num))
-    plt.legend(temp, ['1st hid: %s' % str(h) for h in hiddenslist])
+        # dumped: (trainerrs, valierrs, (ini,step,num))
+    plt.legend(temp, ['%s HN in 1st layer' % str(h) for h in hiddenslist])
+    plt.xlabel('Hidden Neuron in 2nd layer')
+    plt.ylabel('Error(J)')
+    plt.title('Figure 4.4: The Relationship between Number of Hidden Neuron\n'
+        'and Validate Error in ANN')
     plt.show()
     interact(local=locals())
 
@@ -300,46 +324,35 @@ To Think: Should validateset be outside of gamenumlist loop?
 Over 5000-6000 training set seems to produce minimal improvement.
 The game number may be improved by using training set from more educated alg
 '''
-def r5(ini=1000, step=1000, num=10):
-    fileexist = os.path.exists('r5.dump')
-    if fileexist:
-        print('dumped file found')
-        with open('r5.dump', 'rb') as o:
-            trainerrs, valierrs, setup = pickle.load(o)
-    if not fileexist:
-        trainerrs = [[] for i in range(num)]
-        valierrs = [[] for i in range(num)]
-    if fileexist and setup != (ini, step, num):
-        input('Setup doesn\'t match. You sure continue?')
-        trainerrs = [[] for i in range(num)]
-        valierrs = [[] for i in range(num)]
-    OPTIMAL_LAYERNUM = 8
+def r5(ini=100, step=100, num=10):
+    trainerrs = [[] for i in range(num)]
+    valierrs = [[] for i in range(num)]
+    optlayer = 11
     t = timer()
     gamenumlist = [ini + step * i for i in range(num)]
     while True:
         try:
             with t:
-                validateset = ttthelper.gamegen(ini//2, algs=[ttthelper.randomstep] * 2)
+                valisetsize = 500
+                validateset = ttthelper.gamegen(valisetsize, algs=[ttthelper.randomstep] * 2)
                 for i, gamenum in enumerate(gamenumlist):
                     trainset = ttthelper.gamegen(gamenum, algs=[ttthelper.randomstep] * 2)
-                    ai = ann_ai.ann_ai(val_hidden=[OPTIMAL_LAYERNUM], pol_hidden=None, feature=['board'])
+                    ai = ann_ai.ann_ai(val_hidden=[optlayer], pol_hidden=None, feature=['board'])
                     minres = ai.train(trainset, pt=False)
-                    trainerrs[i].append(minres.fun)  # 2 as from gamegen(ini//`2`)
+                    trainerrs[i].append(minres.fun)
                     valierrs[i].append(ai.getcost(validateset))
-            print('Single: %s   Acc: %s   Num: %s' % (t.time, t.acc, t.num))
         except KeyboardInterrupt:
             break
-    trainerrmean = [mean(thiserr) for thiserr in trainerrs]
-    valierrmean = [mean(thiserr) for thiserr in valierrs]
+    trainerrmean = [mean(thiserr, ignoremax=4) for thiserr in trainerrs]
+    valierrmean = [mean(thiserr, ignoremax=4) for thiserr in valierrs]
     p1 = plt.plot([ini + step * i for i in range(num)], trainerrmean)
     p2 = plt.plot([ini + step * i for i in range(num)], valierrmean)
-    plt.legend((p1[0], p2[0]), ('Train', 'Validate'))
+    plt.legend((p1[0], p2[0]), ('Train Error', 'Validate Error'))
+    plt.xlabel('The Number of Games Used to Generate Training Set')
+    plt.ylabel('Error(J)')
+    plt.title('Figure 4.5: The Relationship Between the Size of the Dataset\nand Train/Validate Error')
     plt.show()
-    plt.plot([ini + step * i for i in range(num)], np.array(valierrmean) - np.array(trainerrmean))
-    plt.show()
-    with open('r5.dump', 'wb') as o:
-        setup = (ini, step, num)
-        pickle.dump((trainerrs, valierrs, setup), o)
+    # Dumped: (trainerrs, valierrs, optlayer, valisetsize, (ini, step, num))
     interact(local=locals())
 
 
@@ -545,6 +558,8 @@ def r7_4(boardnum=10000, trialnum=None, hidden=9):
     rndrec_arr = np.array(rndrec)
     sedrec_arr = np.array(sedrec)
     #dumped: rndrec_arr, sedrec_arr, (boradnum, hidden, tempai_board)
+    rnd = [(r[0]+r[1]*0.5)/10000 for r in rndrec_arr]
+    sed = [(s[0]+s[1]*0.5)/10000 for s in sedrec_arr]
     print('boardnum:', boardnum)
     print('random // sli.edu.  (Win/Draw/Lose)')
     for i in range(3):
@@ -688,4 +703,4 @@ Using gamegen_pftlabel..
 
 
 if __name__ == '__main__':
-    r4()
+    r5(1000,1000,10)
